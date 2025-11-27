@@ -163,4 +163,4 @@ public class MyBlockEntity extends BlockEntity {
 
 [expose]: #exposing-a-capability
 [handled]: ../concepts/events.md#creating-an-event-handler
-[network]: ../networking/index.md
+[network]: ../networking/networking.md

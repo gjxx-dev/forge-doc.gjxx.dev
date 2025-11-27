@@ -101,5 +101,5 @@ NBT 提供器是一类特殊的函数（例如 `CopyNbtFunction`），用于指�
 计分板提供器是数值提供器的一种，用于从计分板（scoreboard）读取执行次数。对应的类型为 `LootScoreProviderType`。
 
 [loottable]: ../../resources/server/loottables.md
-[datagen]: ../index.md#data-providers
+[datagen]: ../datagen.md#data-providers
 [registered]: ../../concepts/registries.md#registries-that-arent-forge-registries

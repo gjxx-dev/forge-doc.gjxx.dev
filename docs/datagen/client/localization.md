@@ -34,6 +34,6 @@ this.add("object.examplemod.example_object", "示例对象");
     this.addItem("example.diacritic", "Example with a díacritic");
     ```
 
-[datagen]: ../index.md#data-providers
+[datagen]: ../datagen.md#data-providers
 [lang]: ../../concepts/internationalization.md
 [locale]: https://minecraft.wiki/w/Language#Languages

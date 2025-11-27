@@ -71,6 +71,6 @@ MDK 的默认 `build.gradle` 配置会添加 `runData` 任务，以便运行数�
 [taggen]: ./server/tags.md
 [advgen]: ./server/advancements.md
 [lang]: https://minecraft.wiki/w/Language
-[models]: ../resources/client/models/index.md
-[recipes]: ../resources/server/recipes/index.md
+[models]: ../resources/client/models/models.md
+[recipes]: ../resources/server/recipes/recipes.md
 [loottable]: ../resources/server/loottables.md

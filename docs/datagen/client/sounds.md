@@ -75,5 +75,5 @@ this.add(EXAMPLE_SOUND_EVENT_2, definition()
 );
 ```
 
-[datagen]: ../index.md#data-providers
+[datagen]: ../datagen.md#data-providers
 [soundevent]: ../../gameeffects/sounds.md#creating-sound-events

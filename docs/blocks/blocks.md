@@ -43,6 +43,6 @@
 有关方块属性（例如用于栅栏、墙等原版方块的属性）的信息，请参阅关于 [blockstates] 的章节。
 
 [声音]: ../gameeffects/sounds.md
-[creativetabs]: ../items/index.md#creative-tabs
+[creativetabs]: ../items/items.md#creative-tabs
 [registering]: ../concepts/registries.md#methods-for-registering
 [blockstates]: states.md

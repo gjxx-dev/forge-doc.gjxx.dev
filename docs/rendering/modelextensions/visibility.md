@@ -46,5 +46,5 @@
 3. 这些子模型分别为部件指定不同的可见性，从而共享并重用同一复合模型的不同部分
 
 [bakedmodel]: ../modelloaders/bakedmodel.md
-[composite]: ../modelloaders/index.md/#composite-models
-[obj]: ../modelloaders/index.md/#wavefront-obj-models
+[composite]: ../modelloaders/modelloaders.md#composite-models
+[obj]: ../modelloaders/modelloaders.md#wavefront-obj-models

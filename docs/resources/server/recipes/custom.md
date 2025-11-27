@@ -105,5 +105,5 @@ public Optional<ExampleRecipe> getRecipeFor(Level level, BlockPos pos) {
 
 [forge]: ../../../concepts/registries.md#methods-for-registering
 [json]: https://minecraft.wiki/w/Recipe#JSON_format
-[manager]: ./index.md#recipe-manager
+[manager]: ./recipes.md#recipe-manager
 [datagen]: ../../../datagen/server/recipes.md#custom-recipe-serializers

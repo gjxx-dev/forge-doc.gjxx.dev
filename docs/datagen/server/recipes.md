@@ -162,8 +162,8 @@ and(
 !!! tip
     `FinishedRecipe` 的灵活性允许对任意对象的转换进行数据生成，而不仅限于物品。
 
-[datagen]: ../index.md#data-providers
+[datagen]: ../datagen.md#data-providers
 [ingredients]: ../../resources/server/recipes/ingredients.md#forge-types
-[stack]: ../../resources/server/recipes/index.md#recipe-itemstack-result
+[stack]: ../../resources/server/recipes/recipes.md#recipe-itemstack-result
 [conditional]: ../../resources/server/conditional.md
 [special]: #specialrecipebuilder

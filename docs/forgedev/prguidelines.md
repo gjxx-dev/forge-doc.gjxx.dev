@@ -68,4 +68,4 @@ Forge 不能在不破坏依赖它的模组的情况下引入不兼容的更改�
 如果你理解 PR 过程的谨慎与追求完美的特点，我们也会尽力理解你的观点。PR 在审查并修改至最佳状态后，会由 Lex 进行最终审核，Lex 对是否合并拥有最终决定权。
 
 [patches]: https://github.com/MinecraftForge/MinecraftForge/wiki/If-you-want-to-contribute-to-Forge#conventions-for-coding-patches-for-a-minecraft-class-javapatch
-[forgeenv]: ./index.md
+[forgeenv]: ./forgedev.md

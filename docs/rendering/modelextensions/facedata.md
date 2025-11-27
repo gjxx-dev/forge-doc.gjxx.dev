@@ -90,8 +90,6 @@
 
 通过 `ambient_occlusion` 标志可以为四边形配置 AO，默认值为 `true`。此标志的行为等价于原版格式顶层的 `ambientocclusion` 标志。
 
-![Ambient occlusion in action][ao_img]  
-*左侧启用环境遮蔽，右侧禁用（演示 Smooth Lighting 视觉设置）*
 
 !!! note
     如果顶层的 AO 标志被设置为 false，在元素或面上将该标志设置为 true 无法覆盖顶层设置。
@@ -110,4 +108,3 @@
 
 [tinting]: ../../resources/client/models/tinting.md
 [AO]: https://en.wikipedia.org/wiki/Ambient_occlusion
-[ao_img]: ./ambientocclusion_annotated.png

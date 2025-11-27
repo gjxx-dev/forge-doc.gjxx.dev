@@ -84,4 +84,4 @@ bootstrap.register(
 );
 ```
 
-[datagen]: ../index.md#data-providers
+[datagen]: ../datagen.md#data-providers

@@ -10,7 +10,7 @@
 
 ### `useAmbientOcclusion`
 
-如果模型作为关卡中的方块被渲染，且该方块不发光，并且启用了环境遮蔽（ambient occlusion），则模型会使用[环境遮蔽](ambocc)进行渲染。
+如果模型作为关卡中的方块被渲染，且该方块不发光，并且启用了环境遮蔽（ambient occlusion），则模型会使用[环境遮蔽][ambocc]进行渲染。
 
 ### `isGui3d`
 

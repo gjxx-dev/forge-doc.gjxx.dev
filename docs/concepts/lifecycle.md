@@ -72,7 +72,7 @@ public class MyMod {
 
 [registering]: ./registries.md#methods-for-registering
 [capabilities]: ../datastorage/capabilities.md
-[datagen]: ../datagen/index.md
+[datagen]: ../datagen/datagen.md
 [imc]: ./lifecycle.md#intermodcomms
 [sides]: ./sides.md
 

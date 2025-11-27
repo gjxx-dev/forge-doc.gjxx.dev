@@ -24,4 +24,4 @@ MinecraftForge 文档
 如果你想为文档贡献翻译或改进，请阅读 [贡献指南][contributing]。
 
 [MinecraftForge]: http://minecraftforge.net
-[contributing]: ../contributing.md
+[contributing]: contributing.md

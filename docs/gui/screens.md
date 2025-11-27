@@ -328,7 +328,7 @@ private void clientSetup(FMLClientSetupEvent event) {
     `MenuScreens#register` 不是线程安全的，因此需要在并行分发事件提供的 `#enqueueWork` 中调用。
 
 [menus]: ./menus.md
-[network]: ../networking/index.md
+[network]: ../networking/networking.md
 [screen]: #the-screen-subtype
 [argb]: https://en.wikipedia.org/wiki/RGBA_color_model#ARGB32
 [component]: ../concepts/internationalization.md#translatablecontents

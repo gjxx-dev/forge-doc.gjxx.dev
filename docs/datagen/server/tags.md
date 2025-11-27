@@ -169,5 +169,5 @@ public AttributeTagsProvider(PackOutput output, CompletableFuture<HolderLookup.P
 ```
 
 [tags]: ../../resources/server/tags.md
-[datagen]: ../index.md#data-providers
+[datagen]: ../datagen.md#data-providers
 [custom]: ../../concepts/registries.md#creating-custom-forge-registries

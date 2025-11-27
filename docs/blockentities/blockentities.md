@@ -126,6 +126,6 @@ Level#sendBlockUpdated(BlockPos pos, BlockState oldState, BlockState newState, i
 [registration]: ../concepts/registries.md#methods-for-registering
 [storing-data]: #storing-data-within-your-blockentity
 [menu]: ../gui/menus.md
-[networking]: ../networking/index.md
+[networking]: ../networking/networking.md
 
 [simple_impl]: ../networking/simpleimpl.md

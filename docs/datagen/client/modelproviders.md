@@ -67,12 +67,12 @@ public void gatherData(GatherDataEvent event) {
 
 模型加载器构建器与自定义加载器等更高级主题也被支持（参见原文以了解全部 API 细节）。
 
-[efh]: ../index.md#existing-files
+[efh]: ../datagen.md#existing-files
 [provider]: #model-providers
-[models]: ../../resources/client/models/index.md
-[datagen]: ../index.md#data-providers
+[models]: ../../resources/client/models/models.md
+[datagen]: ../datagen.md#data-providers
 [overrides]: ../../resources/client/models/itemproperties.md
 [color]: ../../resources/client/models/tinting.md#blockcoloritemcolor
 [blockstateprovider]: #block-state-provider
 [blockstate]: https://minecraft.wiki/w/Tutorials/Models#Block_states
-[obj]: ../../rendering/modelloaders/index.md#wavefront-obj-models
+[obj]: ../../rendering/modelloaders/modelloaders.md#wavefront-obj-models

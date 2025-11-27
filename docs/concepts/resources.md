@@ -14,7 +14,7 @@
 
 Minecraft 使用 `ResourceLocation` 来标识资源。`ResourceLocation` 包含两个部分：命名空间（namespace）与路径（path）。它通常指向 `assets/<namespace>/<ctx>/<path>` 下的资源，其中 `ctx` 为根据使用场景不同而变化的上下文路径片段。当 `ResourceLocation` 以字符串形式写入/读取时，它的格式为 `<namespace>:<path>`。若字符串中省略命名空间及冒号，则在读取为 `ResourceLocation` 时命名空间会默认设为 `"minecraft"`。模组应当将其资源放在与其模组 id 相同名称的命名空间下（例如，模组 id 为 `examplemod` 则应分别在 `assets/examplemod` 和 `data/examplemod` 下放置资源，指向这些文件的 `ResourceLocation` 如 `examplemod:<path>`）。这并非强制要求，在某些情况下使用不同的命名空间（甚至多个命名空间）也是可取的。`ResourceLocation` 也在资源系统之外广泛使用，因为它们是标识对象的一个良好唯一键（例如参考[注册表（registries）][]）。
 
-[respack]: ../resources/client/index.md
-[datapack]: ../resources/server/index.md
+[respack]: ../resources/client/client.md
+[datapack]: ../resources/server/server.md
 [registries]: ./registries.md
 

@@ -188,5 +188,5 @@ class Holder {
 [ResourceLocation]: ./resources.md#resourcelocation
 [registration]: #methods-for-registering
 [event]: ./events.md
-[blockentity]: ../blockentities/index.md
+[blockentity]: ../blockentities/blockentities.md
 
