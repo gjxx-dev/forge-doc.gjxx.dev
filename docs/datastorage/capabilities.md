@@ -1,58 +1,56 @@
-The Capability System
-=====================
+# 能力系统（The Capability System）
 
-Capabilities allow exposing features in a dynamic and flexible way without having to resort to directly implementing many interfaces.
+能力（Capabilities）提供了一种动态且灵活的方式来暴露功能，而无需直接实现大量接口。
 
-In general terms, each capability provides a feature in the form of an interface.
+概念上，每个 capability 以接口的形式提供一项功能。
 
-Forge adds capability support to BlockEntities, Entities, ItemStacks, Levels, and LevelChunks, which can be exposed either by attaching them through an event or by overriding the capability methods in your own implementations of the objects. This will be explained in more detail in the following sections.
+Forge 为 `BlockEntities`、`Entities`、`ItemStacks`、`Levels` 和 `LevelChunks` 添加了能力支持，这些能力可以通过事件附加或在相应对象的自定义实现中覆盖能力方法来暴露。下面章节将详细说明。
 
-Forge-provided Capabilities
----------------------------
+Forge 提供的能力
+-----------------
 
-Forge provides three capabilities: `IItemHandler`, `IFluidHandler` and `IEnergyStorage`
+Forge 提供了三种常见能力：`IItemHandler`、`IFluidHandler` 和 `IEnergyStorage`。
 
-`IItemHandler` exposes an interface for handling inventory slots. It can be applied to BlockEntities (chests, machines, etc.), Entities (extra player slots, mob/creature inventories/bags), or ItemStacks (portable backpacks and such). It replaces the old `Container` and `WorldlyContainer` with an automation-friendly system.
+`IItemHandler`：用于处理物品槽的接口。可用于方块实体（如箱子、机器）、实体（额外的玩家槽位、怪物的背包）或物品栈（便携背包等）。它取代了旧的 `Container` 与 `WorldlyContainer`，更适合自动化场景。
 
-`IFluidHandler` exposes an interface for handling fluid inventories. It can also be applied to BlockEntities, Entities, or ItemStacks.
+`IFluidHandler`：用于处理流体存储的接口，同样可应用于方块实体、实体或物品栈。
 
-`IEnergyStorage` exposes an interface for handling energy containers. It can be applied to BlockEntities, Entities, or ItemStacks. It is based on the RedstoneFlux API by TeamCoFH.
+`IEnergyStorage`：用于处理能量容器的接口，可应用于方块实体、实体或物品栈，基于 TeamCoFH 的 RedstoneFlux API。
 
-Using an Existing Capability
-----------------------------
+使用已有能力
+----------------
 
-As mentioned earlier, BlockEntities, Entities, and ItemStacks implement the capability provider feature through the `ICapabilityProvider` interface. This interface adds the method `#getCapability`, which can be used to query the capabilities present in the associated provider objects.
+如前所述，方块实体（BlockEntities）、实体（Entities）和物品栈（ItemStacks）通过 `ICapabilityProvider` 接口实现能力提供者特性。该接口增加了 `#getCapability` 方法，用于查询关联提供者对象上存在的能力。
 
-In order to obtain a capability, you will need to refer it by its unique instance. In the case of the `IItemHandler`, this capability is primarily stored in `ForgeCapabilities#ITEM_HANDLER`, but it is possible to get other instance references by using `CapabilityManager#get`
+要获取能力，需要通过其唯一实例引用。例如 `IItemHandler` 的能力实例通常保存在 `ForgeCapabilities#ITEM_HANDLER`，也可以通过 `CapabilityManager#get` 获取：
 
 ```java
 public static final Capability<IItemHandler> ITEM_HANDLER = CapabilityManager.get(new CapabilityToken<>(){});
 ```
 
-When called, `CapabilityManager#get` provides a non-null capability for your associated type. The anonymous `CapabilityToken` allows Forge to keep a soft dependency system while still having the necessary generic information to get the correct capability.
+`CapabilityManager#get` 会返回与你类型相关的非空 capability 引用。匿名 `CapabilityToken` 允许 Forge 在保留弱依赖的同时拥有必要的泛型信息以获取正确的 capability。
 
 !!! important
-    Even if you have a non-null capability available to you at all times, it does not mean the capability itself is usable or registered yet. This can be checked via `Capability#isRegistered`.
+    即便某能力实例非空，也不代表该能力已经可用或已注册。可以通过 `Capability#isRegistered` 进行检查。
 
-The `#getCapability` method has a second parameter, of type `Direction`, which can be used to request the specific instance for that one face. If passed `null`, it can be assumed that the request comes either from within the block or from some place where the side has no meaning, such as a different dimension. In this case a general capability instance that does not care about sides will be requested instead. The return type of `#getCapability` will correspond to a `LazyOptional` of the type declared in the capability passed to the method. For the Item Handler capability, this is `LazyOptional<IItemHandler>`. If the capability is not available for a particular provider, it will return an empty `LazyOptional` instead.
+`#getCapability` 方法具有第二个参数 `Direction`，可用于请求某个面的特定实例；若传入 `null`，则表明请求来自方块内部或侧无意义的上下文（例如不同维度），此时会请求一个不关心面的通用实例。`#getCapability` 的返回类型通常为能力声明类型的 `LazyOptional`（例如 `LazyOptional<IItemHandler>`）。若该提供者不支持请求的能力，将返回空的 `LazyOptional`。
 
-Exposing a Capability
----------------------
+暴露能力
+---------
 
-In order to expose a capability, you will first need an instance of the underlying capability type. Note that you should assign a separate instance to each object that keeps the capability, since the capability will most probably be tied to the containing object.
+要暴露能力，首先需要能力类型的实例。注意每个拥有该能力的对象应有独立的实例，因为能力通常与容器对象绑定。
 
-In the case of `IItemHandler`, the default implementation uses the `ItemStackHandler` class, which has an optional argument in the constructor, to specify a number of slots. However, relying on the existence of these default implementations should be avoided, as the purpose of the capability system is to prevent loading errors in contexts where the capability is not present, so instantiation should be protected behind a check testing if the capability has been registered (see the remarks about `CapabilityManager#get` in the previous section).
+以 `IItemHandler` 为例，默认实现为 `ItemStackHandler`，其构造器可选参数用于指定槽位数量。但不要依赖默认实现的存在，能力系统的目的之一是避免在能力不存在时发生加载错误，因此在实例化时应先检查能力是否已注册（参见前文 `CapabilityManager#get` 的说明）。
 
-Once you have your own instance of the capability interface, you will want to notify users of the capability system that you expose this capability and provide a `LazyOptional` of the interface reference. This is done by overriding the `#getCapability` method, and comparing the capability instance with the capability you are exposing. If your machine has different slots based on which side is being queried, you can test this with the `side` parameter. For Entities and ItemStacks, this parameter can be ignored, but it is still possible to have side as a context, such as different armor slots on a player (`Direction#UP` exposing the player's helmet slot), or about the surrounding blocks in the inventory (`Direction#WEST` exposing the input slot of a furnace). Do not forget to fall back to `super`, otherwise existing attached capabilities will stop working.
+在拥有能力实例后，应通过重写 `#getCapability` 通知系统你暴露了该能力，并返回该接口引用的 `LazyOptional`。可在方法中比较传入的 capability 实例与要暴露的 capability；若你的机器根据查询面返回不同槽位，可使用 `side` 参数判断。对于实体与物品栈，可忽略该参数，但依然可以将其作为上下文（例如玩家的 `Direction#UP` 可对应头盔槽）。别忘了在不处理时回退到 `super`，否则已有附加能力会停止工作。
 
-Capabilities must be invalidated at the end of the provider's lifecycle via `LazyOptional#invalidate`. For owned BlockEntities and Entities, the `LazyOptional` can be invalidated within `#invalidateCaps`. For non-owned providers, a runnable supplying the invalidation should be passed into `AttachCapabilitiesEvent#addListener`.
+能力必须在提供者生命周期结束时通过 `LazyOptional#invalidate` 进行失效处理。对于属于某对象（owned）的 `BlockEntities` 与 `Entities`，可在 `#invalidateCaps` 中使 `LazyOptional` 失效；对于非属主的提供者，应在 `AttachCapabilitiesEvent#addListener` 中传入用于失效的 runnable。
 
 ```java
-// Somewhere in your BlockEntity subclass
+// 在某个 BlockEntity 子类中
 LazyOptional<IItemHandler> inventoryHandlerLazyOptional;
 
-// Supplied instance (e.g. () -> inventoryHandler)
-// Ensure laziness as initialization should only happen when needed
+// 传入实例的 supplier（如 () -> inventoryHandler ）
 inventoryHandlerLazyOptional = LazyOptional.of(inventoryHandlerSupplier);
 
 @Override
@@ -71,44 +69,37 @@ public void invalidateCaps() {
 ```
 
 !!! tip
-    If only one capability is exposed on a given object, you can use `Capability#orEmpty` as an alternative to the if/else statement.
+    若某对象仅暴露单一能力，可使用 `Capability#orEmpty` 简化判断。
 
-    ```java
-    @Override
-    public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
-      return ForgeCapabilities.ITEM_HANDLER.orEmpty(cap, inventoryHandlerLazyOptional);
-    }
-    ```
+`Item` 是特殊情况，因为其能力提供者存储在 `ItemStack` 上。应通过 `Item#initCapabilities` 附加 provider 来持有该栈的能力生命周期。
 
-`Item`s are a special case since their capability providers are stored on an `ItemStack`. Instead, a provider should be attached through `Item#initCapabilities`. This should hold your capabilities for the lifecycle of the stack.
+建议在代码中直接测试能力可用性，而非依赖映射或其它数据结构，因为能力检查可能会在每个刻（tick）被大量对象执行，需尽量保证性能。
 
-It is strongly suggested that direct checks in code are used to test for capabilities instead of attempting to rely on maps or other data structures, since capability tests can be done by many objects every tick, and they need to be as fast as possible in order to avoid slowing down the game.
+附加能力
+--------
 
-Attaching Capabilities
-----------------------
+如前所述，可通过 `AttachCapabilitiesEvent` 将能力附加到现有提供者、`Level` 或 `LevelChunk`。该事件适用于所有能提供能力的对象，提供五种有效的泛型类型：
 
-As mentioned, attaching capabilities to existing providers, `Level`s, and `LevelChunk`s can be done using `AttachCapabilitiesEvent`. The same event is used for all objects that can provide capabilities. `AttachCapabilitiesEvent` has 5 valid generic types providing the following events:
+* `AttachCapabilitiesEvent<Entity>`：仅针对实体触发。
+* `AttachCapabilitiesEvent<BlockEntity>`：仅针对方块实体触发。
+* `AttachCapabilitiesEvent<ItemStack>`：仅针对物品栈触发。
+* `AttachCapabilitiesEvent<Level>`：仅针对等级触发。
+* `AttachCapabilitiesEvent<LevelChunk>`：仅针对区块（level chunk）触发。
 
-* `AttachCapabilitiesEvent<Entity>`: Fires only for entities.
-* `AttachCapabilitiesEvent<BlockEntity>`: Fires only for block entities.
-* `AttachCapabilitiesEvent<ItemStack>`: Fires only for item stacks.
-* `AttachCapabilitiesEvent<Level>`: Fires only for levels.
-* `AttachCapabilitiesEvent<LevelChunk>`: Fires only for level chunks.
+泛型类型不能更具体。例如：若要为 `Player` 附加能力，需订阅 `AttachCapabilitiesEvent<Entity>` 并在回调中判断提供对象是否为 `Player`，再附加能力。
 
-The generic type cannot be more specific than the above types. For example: If you want to attach capabilities to `Player`, you have to subscribe to the `AttachCapabilitiesEvent<Entity>`, and then determine that the provided object is an `Player` before attaching the capability.
+事件对象提供 `#addCapability` 方法用于将能力提供者附加到目标对象。添加的是能力提供者（capability providers），而非能力本身；提供者可根据不同面返回能力。若能力需持久化存储，可实现 `ICapabilitySerializable<T extends Tag>`，在提供能力的同时实现标签的保存/加载。
 
-In all cases, the event has a method `#addCapability` which can be used to attach capabilities to the target object. Instead of adding capabilities themselves to the list, you add capability providers, which have the chance to return capabilities only from certain sides. While the provider only needs to implement `ICapabilityProvider`, if the capability needs to store data persistently, it is possible to implement `ICapabilitySerializable<T extends Tag>` which, on top of returning the capabilities, will provide tag save/load functions.
+关于如何实现 `ICapabilityProvider`，请参阅上文 “暴露能力（Exposing a Capability）” 节。
 
-For information on how to implement `ICapabilityProvider`, refer to the [Exposing a Capability][expose] section.
+创建自定义能力
+----------------
 
-Creating Your Own Capability
-----------------------------
-
-A capability can be registered using one of two ways: `RegisterCapabilitiesEvent` or `@AutoRegisterCapability`.
+能力可通过两种方式注册：`RegisterCapabilitiesEvent` 或 `@AutoRegisterCapability`。
 
 ### RegisterCapabilitiesEvent
 
-A capability can be registered using `RegisterCapabilitiesEvent` by supplying the class of the capability type to the `#register` method. The event is [handled] on the mod event bus.
+通过在模组事件总线上处理 `RegisterCapabilitiesEvent` 并调用 `#register` 注册能力类型类：
 
 ```java
 @SubscribeEvent
@@ -119,7 +110,7 @@ public void registerCaps(RegisterCapabilitiesEvent event) {
 
 ### @AutoRegisterCapability
 
-A capability is registered using `@AutoRegisterCapability` by annotating the capability type.
+通过在能力类型上添加注解 `@AutoRegisterCapability` 来注册能力：
 
 ```java
 @AutoRegisterCapability
@@ -128,12 +119,12 @@ public interface IExampleCapability {
 }
 ```
 
-Persisting LevelChunk and BlockEntity capabilities
---------------------------------------------
+持久化 LevelChunk 与 BlockEntity 的能力
+-----------------------------------
 
-Unlike Levels, Entities, and ItemStacks, LevelChunks and BlockEntities are only written to disk when they have been marked as dirty. A capability implementation with persistent state for a LevelChunk or a BlockEntity should therefore ensure that whenever its state changes, its owner is marked as dirty.
+与 Levels、Entities、ItemStacks 不同，LevelChunks 与 BlockEntities 仅在标记为脏（dirty）时写入磁盘。如果能力在 LevelChunk 或 BlockEntity 上具有持久化状态，应确保在状态更改时将其宿主标记为脏。
 
-`ItemStackHandler`, commonly used for inventories in BlockEntities, has an overridable method `void onContentsChanged(int slot)` designed to be used to mark the BlockEntity as dirty.
+例如 `ItemStackHandler`（常用于方块实体的物品栏）提供了可重写的 `void onContentsChanged(int slot)` 方法，用于在内容变化时标记 BlockEntity 为脏。
 
 ```java
 public class MyBlockEntity extends BlockEntity {
@@ -144,31 +135,31 @@ public class MyBlockEntity extends BlockEntity {
       super.onContentsChanged(slot);
       setChanged();
     }
-  }
+  };
 
   // ...
 }
 ```
 
-Synchronizing Data with Clients
--------------------------------
+与客户端同步数据
+------------------
 
-By default, capability data is not sent to clients. In order to change this, the mods have to manage their own synchronization code using packets.
+默认情况下，能力数据不会自动发送给客户端。如需同步，模组需自行通过数据包实现同步逻辑。
 
-There are three different situations in which you may want to send synchronization packets, all of them optional:
+常见需要同步的场景（均为可选）：
 
-1. When the entity spawns in the level, or the block is placed, you may want to share the initialization-assigned values with the clients.
-2. When the stored data changes, you may want to notify some or all of the watching clients.
-3. When a new client starts viewing the entity or block, you may want to notify it of the existing data.
+1. 实体生成或方块放置时，向客户端共享初始化值。
+2. 存储数据变化时，通知部分或全部观察该对象的客户端。
+3. 新客户端开始查看该实体或方块时，发送已有数据。
 
-Refer to the [Networking][network] page for more information on implementing network packets.
+实现网络数据包的详细信息见 [Networking][network] 页面。
 
-Persisting across Player Deaths
--------------------------------
+玩家死亡时的数据持久化
+----------------------
 
-By default, the capability data does not persist on death. In order to change this, the data has to be manually copied when the player entity is cloned during the respawn process.
+默认情况下，能力数据在玩家死亡时不保留。如需保留，需要在玩家实体克隆（重生）过程中手动复制数据。
 
-This can be done via `PlayerEvent$Clone` by reading the data from the original entity and assigning it to the new entity. In this event, the `#isWasDeath` method can be used to distinguish between respawning after death and returning from the End. This is important because the data will already exist when returning from the End, so care has to be taken to not duplicate values in this case.
+可在 `PlayerEvent$Clone` 中读取原实体的数据并赋值给新实体。通过 `#isWasDeath` 可区分是死后重生还是从末地返回；后者会已存在数据，因此应避免重复复制。
 
 [expose]: #exposing-a-capability
 [handled]: ../concepts/events.md#creating-an-event-handler

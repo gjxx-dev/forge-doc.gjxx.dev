@@ -1,9 +1,9 @@
-Mod Lifecycle
+# 模组生命周期
 ==============
 
-During the mod loading process, the various lifecycle events are fired on the mod-specific event bus. Many actions are performed during these events, such as [registering objects][registering], preparing for [data generation][datagen], or [communicating with other mods][imc].
+在模组加载过程中，各种生命周期事件会在模组专属的事件总线上被触发。在这些事件中会执行许多操作，例如[注册对象][registering]、为[数据生成][datagen]做准备，或与其他模组进行[通信][imc]。
 
-Event listeners should be registered either using `@EventBusSubscriber(bus = Bus.MOD)` or in the mod constructor:
+事件监听器应使用 `@EventBusSubscriber(bus = Bus.MOD)` 注解注册，或在模组构造函数中注册：
 
 ```Java
 @Mod.EventBusSubscriber(modid = "mymod", bus = Mod.EventBusSubscriber.Bus.MOD)
@@ -23,55 +23,56 @@ public class MyMod {
 ```
 
 !!! warning
-    Most of the lifecycle events are fired in parallel: all mods will concurrently receive the same event.
+    大多数生命周期事件是并行触发的：所有模组将并发地接收相同事件。
     
-    Mods *must* take care to be thread-safe, like when calling other mods' APIs or accessing vanilla systems. Defer code for later execution via `ParallelDispatchEvent#enqueueWork`.
+    模组*必须*注意线程安全，特别是在调用其他模组的 API 或访问原版系统时。可通过 `ParallelDispatchEvent#enqueueWork` 将代码延后执行以保证安全。
 
-Registry Events
+注册事件
 ---------------
 
-The registry events are fired after the mod instance construction. There are three: `NewRegistryEvent`, `DataPackRegistryEvent$NewRegistry` and `RegisterEvent`. These events are fired synchronously during mod loading.
+注册事件在模组实例构造之后触发。有三类：`NewRegistryEvent`、`DataPackRegistryEvent$NewRegistry` 与 `RegisterEvent`。这些事件在模组加载期间同步触发。
 
-`NewRegistryEvent` allows modders to register their own custom registries, using the `RegistryBuilder` class.
+`NewRegistryEvent` 允许模组使用 `RegistryBuilder` 注册自定义注册表（registries）。
 
-`DataPackRegistryEvent$NewRegistry` allows modders to register custom datapack registries by providing a `Codec` to encode and decode the object from JSON.
+`DataPackRegistryEvent$NewRegistry` 允许模组通过提供 `Codec` 来注册自定义的数据包（datapack）注册表，以便从 JSON 编码与解码对象。
 
-`RegisterEvent` is for [registering objects][registering] into the registries. The event is fired for each registry.
+`RegisterEvent` 用于将对象[注册到注册表][registering]。该事件会针对每个注册表触发。
 
 !!! note
-    You should prefer using [DeferredRegister][registering] over the registry events wherever possible. DeferredRegister handles timing on your behalf and is less error-prone.
+    尽可能优先使用 [DeferredRegister][registering]，而不是直接使用注册事件。DeferredRegister 会替你处理时机问题，且更不容易出错。
 
-Data Generation
+数据生成
 ---------------
 
-If the game is setup to run [data generators][datagen], then the `GatherDataEvent` will be the last event to fire. This event is for registering mods' data providers to their associated data generator. This event is also fired synchronously.
+如果游戏配置为运行[数据生成器][datagen]，那么 `GatherDataEvent` 会是最后触发的事件。该事件用于向关联的数据生成器注册模组的数据提供器（data providers）。该事件同样是同步触发的。
 
-Common Setup
+通用设置（Common Setup）
 ------------
 
-`FMLCommonSetupEvent` is for actions that are common to both physical client and server, such as registering [capabilities][capabilities].
+`FMLCommonSetupEvent` 用于客户端与服务端通用的初始化，例如注册 [capabilities][capabilities]。
 
-Sided Setup
+按侧设置（Sided Setup）
 -----------
 
-The sided-setup events are fired on their respective [physical sides][sides]: `FMLClientSetupEvent` on the physical client, and `FMLDedicatedServerSetupEvent` for the dedicated server. This is where physical side-specific initialization should occur, such as registering client-side key bindings.
+按侧设置事件会在对应的[物理侧][sides]触发：`FMLClientSetupEvent` 在物理客户端触发，`FMLDedicatedServerSetupEvent` 在专用服务器触发。物理侧特有的初始化（例如注册客户端按键绑定）应在相应事件中进行。
 
-InterModComms
+模组间通信（InterModComms）
 -------------
 
-This is where messages can be sent to mods for cross-mod compatibility. There are two events: `InterModEnqueueEvent` and `InterModProcessEvent`.
+此处用于发送跨模组兼容性消息。相关事件有 `InterModEnqueueEvent` 与 `InterModProcessEvent`。
 
-`InterModComms` is the class responsible for holding messages for mods. The methods are safe to call during the lifecycle events, as it is backed by a `ConcurrentMap`.
+`InterModComms` 类负责保存要发送到其他模组的消息。其方法可在生命周期事件期间安全调用，因为其底层由 `ConcurrentMap` 支持。
 
-During the `InterModEnqueueEvent`, use `InterModComms#sendTo` to send messages to different mods. These methods take in the mod id that will be sent the message, the key associated with the message data, and a supplier holding the message data. Additionally, the sender of the message can also be specified, but by default it will be the mod id of the caller.
+在 `InterModEnqueueEvent` 中，使用 `InterModComms#sendTo` 向不同模组发送消息。该方法接收目标模组 id、与消息数据相关联的键，以及持有消息数据的 supplier。此外，可指定消息的发送者；默认情况下为调用方的模组 id。
 
-Then during the `InterModProcessEvent`, use `InterModComms#getMessages` to get a stream of all received messages. The mod id supplied will almost always be the mod id of the mod the method is called on. Additionally, a predicate can be specified to filter out the message keys. This will return a stream of `IMCMessage`s which hold the sender of the data, the receiver of the data, the data key, and the supplied data itself.
+在 `InterModProcessEvent` 中，使用 `InterModComms#getMessages` 获取所有接收消息的流。传入的模组 id 通常为调用方法的模组 id。也可以传入谓词来过滤消息键。此方法返回 `IMCMessage` 的流，这些对象包含数据的发送者、接收者、数据键与提供的数据本身。
 
 !!! note
-    There are two other lifecycle events: `FMLConstructModEvent`, fired directly after mod instance construction but before the `RegisterEvent`, and `FMLLoadCompleteEvent`, fired after the `InterModComms` events, for when the mod loading process is complete.
+    还有两个其他的生命周期事件：`FMLConstructModEvent`（在模组实例构造后但在 `RegisterEvent` 前触发）以及 `FMLLoadCompleteEvent`（在 `InterModComms` 事件之后触发，表示模组加载过程完成）。
 
 [registering]: ./registries.md#methods-for-registering
 [capabilities]: ../datastorage/capabilities.md
 [datagen]: ../datagen/index.md
 [imc]: ./lifecycle.md#intermodcomms
 [sides]: ./sides.md
+

@@ -1,16 +1,15 @@
-Internationalization and Localization
-=====================================
+# 国际化与本地化
 
-Internationalization, i18n for short, is a way of designing code so that it requires no changes to be adapted for various languages. Localization is the process of adapting displayed text to the user's language.
+国际化（Internationalization，简称 i18n）是一种编写代码的方式，使其在不修改代码的情况下适配不同语言。 本地化（Localization）是将显示文本适配到用户语言的过程。
 
-I18n is implemented using _translation keys_. A translation key is a string that identifies a piece of displayable text in no specific language. For example, `block.minecraft.dirt` is the translation key referring to the name of the Dirt block. This way, displayable text may be referenced with no concern for a specific language. The code requires no changes to be adapted in a new language.
+i18n 通过“翻译键”（translation keys）来实现。翻译键是一个标识可显示文本的字符串，不对应任何具体语言。例如，`block.minecraft.dirt` 是指代 Dirt 方块名称的翻译键。通过使用翻译键，显示文本可以与具体语言解耦，代码本身无需为新的语言做改动。
 
-Localization will happen in the game's locale. In a Minecraft client the locale is specified by the language settings. On a dedicated server, the only supported locale is `en_us`. A list of available locales can be found on the [Minecraft Wiki][langs].
+本地化发生在游戏的区域设置（locale）中。在 Minecraft 客户端，区域设置由语言设置决定；在专用服务器上，唯一支持的区域设置是 `en_us`。可用语言列表见 [Minecraft Wiki][langs]。
 
-Language files
+语言文件
 --------------
 
-Language files are located by `assets/[namespace]/lang/[locale].json` (e.g. all US English translations provided by `examplemod` would be within `assets/examplemod/lang/en_us.json`). The file format is simply a json map from translation keys to values. The file must be encoded in UTF-8. Old .lang files can be converted to json using a [converter][converter].
+语言文件位于 `assets/[namespace]/lang/[locale].json`（例如 `examplemod` 的所有美式英文翻译位于 `assets/examplemod/lang/en_us.json`）。文件格式是从翻译键到文本值的简单 JSON 映射，文件必须使用 UTF-8 编码。旧的 `.lang` 文件可以用一个 [转换器][converter] 转为 JSON。
 
 ```js
 {
@@ -20,12 +19,12 @@ Language files are located by `assets/[namespace]/lang/[locale].json` (e.g. all 
 }
 ```
 
-Usage with Blocks and Items
+与方块与物品的使用
 ---------------------------
 
-Block, Item and a few other Minecraft classes have built-in translation keys used to display their names. These translation keys are specified by overriding `#getDescriptionId`. Item also has `#getDescriptionId(ItemStack)` which can be overridden to provide different translation keys depending on ItemStack NBT.
+`Block`、`Item` 以及一些其他 Minecraft 类内置了用于显示名称的翻译键。这些翻译键通过重写 `#getDescriptionId` 来指定。`Item` 还有 `#getDescriptionId(ItemStack)`，可以根据 `ItemStack` 的 NBT 返回不同的翻译键。
 
-By default, `#getDescriptionId` will return `block.` or `item.` prepended to the registry name of the block or item, with the colon replaced by a dot. `BlockItem`s override this method to take their corresponding `Block`'s translation key by default. For example, an item with ID `examplemod:example_item` effectively requires the following line in a language file:
+默认情况下，`#getDescriptionId` 会返回以 `block.` 或 `item.` 为前缀并将注册名中的冒号替换为点的字符串。`BlockItem` 会默认重写此方法以使用对应 `Block` 的翻译键。例如，ID 为 `examplemod:example_item` 的物品在语言文件中需要如下条目：
 
 ```js
 {
@@ -34,34 +33,33 @@ By default, `#getDescriptionId` will return `block.` or `item.` prepended to the
 ```
 
 !!! note
-    The only purpose of a translation key is internationalization. Do not use them for logic. Use registry names instead.
+    翻译键的唯一目的是支持国际化。不要用它们来决定程序逻辑，请使用注册名（registry names）。
 
-
-Localization methods
+本地化方法
 --------------------
 
 !!! warning
-    A common issue is having the server localize for clients. The server can only localize in its own locale, which does not necessarily match the locale of connected clients.
+    一个常见的问题是让服务器为客户端做本地化。服务器只能使用它自身的区域设置进行本地化，这不一定与连接的客户端的语言设置一致。
     
-    To respect the language settings of clients, the server should have clients localize text in their own locale using `TranslatableComponent` or other methods preserving the language neutral translation keys.
+    为了尊重客户端的语言设置，服务器应让客户端在其自身区域设置下本地化文本，方法是使用 `TranslatableComponent` 或其他保留语言中立翻译键的方式。
 
-### `net.minecraft.client.resources.language.I18n` (client only)
+### `net.minecraft.client.resources.language.I18n`（仅客户端可用）
 
-**This I18n class can only be found on a Minecraft client!** It is intended to be used by code that only runs on the client. Attempts to use this on a server will throw exceptions and crash.
+**该 I18n 类仅存在于 Minecraft 客户端！** 它仅供在客户端执行的代码使用。尝试在服务器上调用它将抛出异常并导致崩溃。
 
-- `get(String, Object...)` localizes in the client's locale with formatting. The first parameter is a translation key, and the rest are formatting arguments for `String.format(String, Object...)`.
+- `get(String, Object...)`：在客户端区域设置下进行本地化并支持格式化。第一个参数是翻译键，后续参数是传递给 `String.format(String, Object...)` 的格式化参数。
 
 ### `TranslatableContents`
 
-`TranslatableContents` is a `ComponentContents` that is localized and formatted lazily. It is very useful when sending messages to players because it will be automatically localized in their own locale.
+`TranslatableContents` 是一种延迟本地化与格式化的 `ComponentContents`。当向玩家发送消息时非常有用，因为它会在客户端自动按客户端本地化。
 
-The first parameter of the `TranslatableContents(String, Object...)` constructor is a translation key, and the rest are used for formatting. The only supported format specifiers are `%s` and `%1$s`, `%2$s`, `%3$s` etc. Formatting arguments may be `Component`s that will be inserted into the resulting formatted text with all their attributes preserved.
+`TranslatableContents(String, Object...)` 构造函数的第一个参数是翻译键，后续参数用于格式化。支持的格式化占位符仅有 `%s` 与 `%1$s`, `%2$s`, `%3$s` 等。格式化参数可以是 `Component`，它们会以完整属性被插入到最终格式化文本中。
 
-A `MutableComponent` can be created using `Component#translatable` by passing in the `TranslatableContents`'s parameters. It can also be created using `MutableComponent#create` by passing in the `ComponentContents` itself.
+可以通过传入 `TranslatableContents` 的参数使用 `Component#translatable` 创建一个 `MutableComponent`；也可以直接使用 `MutableComponent#create` 并传入 `ComponentContents` 本身来创建。
 
 ### `TextComponentHelper`
 
-- `createComponentTranslation(CommandSource, String, Object...)` creates a localized and formatted `MutableComponent` depending on a receiver. The localization and formatting is done eagerly if the receiver is a vanilla client. If not, the localization and formatting is done lazily with a `Component` containing `TranslatableContents`. This is only useful if the server should allow vanilla clients to connect.
+- `createComponentTranslation(CommandSource, String, Object...)`：根据接收者创建一个本地化且已格式化的 `MutableComponent`。若接收者是原版客户端，则本地化与格式化会被立即执行；否则会延迟，返回包含 `TranslatableContents` 的 `Component`。当服务器需要允许原版客户端直接连入时，这个方法特别有用。
 
 [langs]: https://minecraft.wiki/w/Language#Languages
 [converter]: https://tterrag.com/lang2json/

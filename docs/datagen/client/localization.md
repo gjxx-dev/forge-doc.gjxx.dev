@@ -1,16 +1,15 @@
-Language Generation
-===================
+# 语言文件生成
 
-[Language files][lang] can be generated for a mod by subclassing `LanguageProvider` and implementing `#addTranslations`. Each `LanguageProvider` subclass created represents a separate [locale] (`en_us` represents American English, `es_es` represents Spanish, etc.). After implementation, the provider must be [added][datagen] to the `DataGenerator`.
+可以通过继承 `LanguageProvider` 并实现 `#addTranslations` 来为模组生成语言文件（language files）。每个 `LanguageProvider` 子类代表一种语言环境（例如 `en_us` 表示美式英语，`es_es` 表示西班牙语等）。实现后需将提供者 [添加][datagen] 到 `DataGenerator`。
 
 ```java
-// On the MOD event bus
+// 在 MOD 事件总线上
 @SubscribeEvent
 public void gatherData(GatherDataEvent event) {
     event.getGenerator().addProvider(
-        // Tell generator to run only when client assets are generating
+        // 仅在生成客户端资源时运行
         event.includeClient(),
-        // Localizations for American English
+        // 为美式英语添加本地化
         output -> new MyLanguageProvider(output, MOD_ID, "en_us")
     );
 }
@@ -19,22 +18,22 @@ public void gatherData(GatherDataEvent event) {
 `LanguageProvider`
 ------------------
 
-Each language provider is simple a map of strings where each translation key is mapped to a localized name. A translation key mapping can be added using `#add`. Additionally, there are methods which use the translation key of a `Block`, `Item`, `ItemStack`, `Enchantment`, `MobEffect`, and `EntityType`.
+每个语言提供者实质上是一个键值映射（translation map），把翻译键映射到本地化文本。可通过 `#add` 添加翻译键映射。此外，类中还提供了针对 `Block`、`Item`、`ItemStack`、`Enchantment`、`MobEffect` 与 `EntityType` 的便捷方法。
 
 ```java
-// In LanguageProvider#addTranslations
-this.addBlock(EXAMPLE_BLOCK, "Example Block");
-this.add("object.examplemod.example_object", "Example Object");
+// 在 LanguageProvider#addTranslations 中
+this.addBlock(EXAMPLE_BLOCK, "示例方块");
+this.add("object.examplemod.example_object", "示例对象");
 ```
 
 !!! tip
-    Localized names which contain alphanumeric values not in American English can be supplied as is. The provider automatically translates the characters into their unicode equivalents to be read by the game.
+    包含非美式英语字母（例如带重音符号）的本地化字符串可以直接提供，生成器会自动将字符转为游戏可识别的 unicode 编码形式。
 
     ```java
-    // Encdoded as 'Example with a d\u00EDacritic'
+    // 将被编码为 'Example with a d\u00EDacritic'
     this.addItem("example.diacritic", "Example with a díacritic");
     ```
 
+[datagen]: ../index.md#data-providers
 [lang]: ../../concepts/internationalization.md
 [locale]: https://minecraft.wiki/w/Language#Languages
-[datagen]: ../index.md#data-providers

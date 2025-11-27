@@ -1,41 +1,40 @@
-`ItemOverrides`
-==================
+# ItemOverrides
 
-`ItemOverrides` provides a way for an [`BakedModel`][baked] to process the state of an `ItemStack` and return a new `BakedModel`; thereafter, the returned model replaces the old one. `ItemOverrides` represents an arbitrary function `(BakedModel, ItemStack, ClientLevel, LivingEntity, int)` → `BakedModel`, making it useful for dynamic models. In vanilla, it is used to implement item property overrides.
+`ItemOverrides` 提供了一种方式，让一个 [`BakedModel`][baked] 能基于 `ItemStack` 的状态处理并返回一个新的 `BakedModel`；返回的模型会替换原有模型。`ItemOverrides` 表示一个任意函数 `(BakedModel, ItemStack, ClientLevel, LivingEntity, int)` → `BakedModel`，因此适用于动态模型。原版中，它用于实现物品属性重写（item property overrides）。
 
 ### `ItemOverrides()`
 
-Given a list of `ItemOverride`s, the constructor copies and bakes the list. The baked overrides may be accessed with `#getOverrides`.
+构造函数接受一个 `ItemOverride` 列表，并对该列表进行拷贝与 bake（烘焙）。已烘焙的 overrides 可通过 `#getOverrides` 访问。
 
 ### `resolve`
 
-This takes an `BakedModel`, an `ItemStack`, a `ClientLevel`, a `LivingEntity`, and an `int` to produce another `BakedModel` to use for rendering. This is where models can handle the state of their items.
+该方法接受一个 `BakedModel`、一个 `ItemStack`、一个 `ClientLevel`、一个 `LivingEntity` 和一个 `int`，并返回用于渲染的另一个 `BakedModel`。这里是模型根据物品状态选择或修改自身的地方。
 
-This should not mutate the level.
+该方法不应修改关卡（level）。
 
 ### `getOverrides`
 
-Returns an immutable list containing all the [`BakedOverride`][override]s used by this `ItemOverrides`. If none are applicable, this returns the empty list.
+返回一个不可变列表，包含该 `ItemOverrides` 使用的所有 [`BakedOverride`][override]。如果没有适用的重写，则返回空列表。
 
 ## `BakedOverride`
 
-This class represents a vanilla item override, which holds several `ItemOverrides$PropertyMatcher` for the properties on an item and a model to use in case those matchers are satisfied. They are the objects in the `overrides` array of a vanilla item JSON model:
+此类表示原版的物品重写（item override），它保存多个 `ItemOverrides$PropertyMatcher` 用于匹配物品的属性，以及在匹配成功时使用的目标模型。它们对应于原版物品 JSON 模型中 `overrides` 数组中的对象：
 
 ```js
 {
-  // Inside a vanilla JSON item model
+  // 在原版 JSON 物品模型中
   "overrides": [
     {
-      // This is an ItemOverride
+      // 这是一个 ItemOverride
       "predicate": {
-        // This is the Map<ResourceLocation, Float>, containing the names of properties and their minimum values
+        // 这是 Map<ResourceLocation, Float>，包含属性名及其最小值
         "example1:prop": 0.5
       },
-      // This is the 'location', or target model, of the override, which is used if the predicate above matches
+      // 当上述 predicate 匹配时使用的目标模型
       "model": "example1:item/model"
     },
     {
-      // This is another ItemOverride
+      // 另一个 ItemOverride
       "predicate": {
         "example2:prop": 1
       },

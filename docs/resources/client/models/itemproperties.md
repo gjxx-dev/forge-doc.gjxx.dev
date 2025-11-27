@@ -1,35 +1,34 @@
-Item Properties
-===============
+# 物品属性
 
-Item properties are a way for the "properties" of items to be exposed to the model system. An example is the bow, where the most important property is how far the bow has been pulled. This information is then used to choose a model for the bow, creating an animation for pulling it.
+物品属性（item properties）让物品的“属性”可被模型系统读取。例如弓（bow），其关键属性是弓被拉开的程度。该信息用于选择弓的模型，从而实现拉弓的动画。
 
-An item property assigns a certain `float` value to every `ItemStack` it is registered for, and vanilla item model definitions can use these values to define "overrides", where an item defaults to a certain model, but if an override matches, it overrides the model and uses another. They are useful mainly because they are continuous. For example, bows use item properties to define their pull animation. The item models are decided by the 'float' number predicates, it is not limited but generally between `0.0F` and `1.0F`. This allows resource packs to add as many models as they want for the bow pulling animation along that spectrum, instead of being stuck with four "slots" for their models in the animation. The same is true of the compass and clock.
+物品属性会为每个注册了该属性的 `ItemStack` 赋予一个 `float` 值，原版的物品模型定义可以使用这些值来定义“overrides”，即默认模型在满足某些 predicate 时被替换为另一个模型。它们的优点在于连续性。例如，弓使用物品属性定义拉弓动画，模型由一系列 float 谓词决定，通常在 `0.0F` 到 `1.0F` 之间。资源包可以沿着该连续区间为拉弓动画添加任意数量的模型，而不必局限于固定的几个“槽”。指南针和钟表也采用类似机制。
 
-Adding Properties to Items
+向物品添加属性
 --------------------------
 
-`ItemProperties#register` is used to add a property to a certain item. The `Item` parameter is the item the property is being attached to (e.g. `ExampleItems#APPLE`). The `ResourceLocation` parameter is the name given to the property (e.g. `new ResourceLocation("pull")`). The `ItemPropertyFunction` is a functional interface that takes the `ItemStack`, the `ClientLevel` it is in (may be null), the `LivingEntity` that holds it (may be null), and the `int` containing the id of the holding entity (may be `0`), returning the `float` value for the property. For modded item properties, it is recommended that the mod id of the mod is used as the namespace (e.g. `examplemod:property` and not just `property`, as that really means `minecraft:property`). These should be done in `FMLClientSetupEvent`.
-There's also another method `ItemProperties#registerGeneric` that is used to add properties to all items, and it does not take `Item` as its parameter since all items will apply this property.
+使用 `ItemProperties#register` 向某个物品添加属性。`Item` 参数为属性所附着的物品（例如 `ExampleItems#APPLE`）。`ResourceLocation` 参数为属性名（例如 `new ResourceLocation("pull")`）。`ItemPropertyFunction` 是一个函数式接口，接受 `ItemStack`、所属的 `ClientLevel`（可为空）、持有它的 `LivingEntity`（可为空）以及持有实体的 id（int，可能为 `0`），并返回该属性的 `float` 值。对于 mod 的自定义属性，建议使用该 mod 的 mod id 作为命名空间（例如 `examplemod:property`），不要仅使用 `property`（那会解析为 `minecraft:property`）。这些注册应在 `FMLClientSetupEvent` 中完成。
+还有一个 `ItemProperties#registerGeneric` 方法，用于向所有物品添加属性，它不接收 `Item` 参数，因为适用于所有物品。
 
 !!! important
-    Use `FMLClientSetupEvent#enqueueWork` to proceed with the tasks, since the data structures in `ItemProperties` are not thread-safe.
+    请使用 `FMLClientSetupEvent#enqueueWork` 来执行注册任务，因为 `ItemProperties` 内的数据结构不是线程安全的。
 
 !!! note
-    `ItemPropertyFunction` is deprecated by Mojang in favor of using the subinterface `ClampedItemPropertyFunction` which clamps the result between `0` and `1`.
+    Mojang 已弃用 `ItemPropertyFunction`，推荐使用子接口 `ClampedItemPropertyFunction`，它会将结果夹到 0 到 1 之间。
 
-Using Overrides
+使用 overrides
 ---------------
 
-The format of an override can be seen on the [wiki][format], and a good example can be found in `model/item/bow.json`. For reference, here is a hypothetical example of an item with an `examplemod:power` property. If the values have no match, the default is the current model, but if there are multiple matches, the last match in the list will be selected.
+overrides 的格式可见 [wiki][format]，一个好的示例是 `model/item/bow.json`。下面是一个假设示例，演示如何基于 `examplemod:power` 属性进行模型重写。若无匹配项，则使用当前模型；若有多个匹配，则选择列表中最后一个匹配项。
 
 !!! important
-    A predicate applies to all values *greater than or equal to* the given value.
+    谓词对 *大于或等于* 指定值的所有数值都适用。
 
 ```js
 {
   "parent": "item/generated",
   "textures": {
-    // Default
+    // 默认
     "layer0": "examplemod:items/example_partial"
   },
   "overrides": [
@@ -44,7 +43,7 @@ The format of an override can be seen on the [wiki][format], and a good example 
 }
 ```
 
-And here is a hypothetical snippet from the supporting code. Unlike the older versions (lower than 1.16.x), this needs to be done on client side only because `ItemProperties` does not exist on server.
+下面是配套代码的示例。与 1.16.x 以下的旧版本不同，这一注册需要只在客户端完成，因为 `ItemProperties` 在服务器不存在。
 
 ```java
 private void setup(final FMLClientSetupEvent event)
@@ -60,3 +59,4 @@ private void setup(final FMLClientSetupEvent event)
 ```
 
 [format]: https://minecraft.wiki/w/Tutorials/Models#Item_models
+

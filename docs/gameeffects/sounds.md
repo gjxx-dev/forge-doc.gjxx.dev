@@ -1,21 +1,20 @@
-Sounds
-======
+# 声音（Sounds）
 
-Terminology
------------
+术语
+----
 
-| Term           | Description |
-|----------------|----------------|
-|  Sound Events  | Something that triggers a sound effect. Examples include `minecraft:block.anvil.hit` or `botania:spreader_fire`. |
-| Sound Category | The category of the sound, for example `player`, `block` or simply `master`. The sliders in the sound settings GUI represent these categories. |
-|   Sound File   | The literal file on disk that is played: an .ogg file. |
+| 术语                       | 含义                                                                                 |
+| -------------------------- | ------------------------------------------------------------------------------------ |
+| Sound Events（声音事件）   | 触发音效的事件，例如 `minecraft:block.anvil.hit` 或 `botania:spreader_fire`。        |
+| Sound Category（音量类别） | 声音所属的类别，例如 `player`、`block` 或 `master`。声音设置界面的滑块对应这些类别。 |
+| Sound File（音频文件）     | 磁盘上的实际文件（.ogg）。                                                           |
 
 `sounds.json`
--------------
+---------------
 
-This JSON defines sound events, and defines which sound files they play, the subtitle, etc. Sound events are identified with [`ResourceLocation`][loc]s. `sounds.json` should be located at the root of a resource namespace (`assets/<namespace>/sounds.json`), and it defines sound events in that namespace (`assets/<namespace>/sounds.json` defines sound events in the namespace `namespace`.).
+该 JSON 文件定义声音事件、它们播放的音频文件、字幕等。声音事件由 [`ResourceLocation`][loc] 标识。`sounds.json` 应位于资源命名空间根目录下（`assets/<namespace>/sounds.json`），并定义该命名空间内的声音事件。
 
-A full specification is available on the vanilla [wiki][], but this example highlights the important parts:
+完整规范见原版 [wiki]，下面示例强调了关键部分：
 
 ```js
 {
@@ -34,74 +33,67 @@ A full specification is available on the vanilla [wiki][], but this example high
 }
 ```
 
-Underneath the top-level object, each key corresponds to a sound event. Note that the namespace is not given, as it is taken from the namespace of the JSON itself. Each event specifies a localization key to be shown when subtitles are enabled. Finally, the actual sound files to be played are specified. Note that the value is an array; if multiple sound files are specified, the game will randomly choose one to play whenever the sound event is triggered.
+在顶层对象下，每个键对应一个声音事件。注意命名空间不在键内指定，而是由 JSON 所在命名空间决定。每个事件可以指定一个用于字幕的本地化键（当字幕开启时显示）。实际播放的音频文件通过 `sounds` 数组指定；若数组中有多个音频，游戏会在触发事件时随机选择其一播放。
 
-The two examples represent two different ways to specify a sound file. The [wiki] has precise details, but generally, long sound files such as background music or music discs should use the second form, because the "stream" argument tells Minecraft to not load the entire sound file into memory but to stream it from disk. The second form can also specify the volume, pitch, and weight of a sound file.
+示例中展示了两种指定音频文件的方式。通常较长的音频（背景音乐或唱片）应使用第二种形式并设置 `stream: true`，这样 Minecraft 会从磁盘流式读取而不是全部载入内存；第二种方式还可以指定音量（volume）、音高（pitch）和权重（weight）。
 
-In all cases, the path to a sound file for namespace `namespace` and path `path` is `assets/<namespace>/sounds/<path>.ogg`. Therefore `mymod:open_chest_sound_file` points to `assets/mymod/sounds/open_chest_sound_file.ogg`, and `mymod:music/epic_music` points to `assets/mymod/sounds/music/epic_music.ogg`.
+对于命名空间 `namespace` 与路径 `path`，对应的音频文件路径为 `assets/<namespace>/sounds/<path>.ogg`。因此 `mymod:open_chest_sound_file` 指向 `assets/mymod/sounds/open_chest_sound_file.ogg`，而 `mymod:music/epic_music` 指向 `assets/mymod/sounds/music/epic_music.ogg`。
 
-A `sounds.json` can be [data generated][datagen].
+`sounds.json` 也可以通过 [数据生成][datagen] 生成。
 
-Creating Sound Events
----------------------
+创建声音事件
+---------------
 
-In order to reference sounds on the server, a `SoundEvent` holding a corresponding entry in `sounds.json` must be created. This `SoundEvent` must then be [registered][registration]. Normally, the location used to create a sound event should be set as it's registry name.
+要在服务端引用声音，需创建一个对应 `sounds.json` 条目的 `SoundEvent` 并将其[注册][registration]。通常，创建 `SoundEvent` 时使用的位置应设置为其注册名。
 
-The `SoundEvent` acts as a reference to the sound and is passed around to play them. If a mod has an API, it should expose its `SoundEvent`s in the API.
+`SoundEvent` 用作对声音的引用并在需要时传递。如果模组提供了 API，应在 API 中公开这些 `SoundEvent`。
 
 !!! note
-    As long as a sound is registered within the `sounds.json`, it can still be referenced on the logical client regardless of whether there is a referencing `SoundEvent`.
+    只要声音在 `sounds.json` 中注册，即使没有对应的 `SoundEvent`，在逻辑客户端依然可以引用该声音。
 
-Playing Sounds
---------------
+播放声音
+--------
 
-Vanilla has lots of methods for playing sounds, and it is unclear which to use at times.
+原版包含多种播放声音的方法，使用场景有所不同。下文用“Server Behavior / Client Behavior”区分逻辑侧的行为（参见 [sides]）。
 
-Note that each takes a `SoundEvent`, the ones registered above. Additionally, the terms *"Server Behavior"* and *"Client Behavior"* refer to the respective [**logical** side][sides].
+`Level` 方法：
 
-### `Level`
+1. `playSound(Player, BlockPos, SoundEvent, SoundSource, volume, pitch)`
+   - 转发到重载方法并在每个坐标上加 0.5。
+2. `playSound(Player, double x, double y, double z, SoundEvent, SoundSource, volume, pitch)`
+   - 客户端行为：若传入玩家为当前客户端玩家，则在客户端播放声音。
+   - 服务端行为：向附近所有玩家播放该声音，但**不包含**传入的玩家（参数可为 `null`）。
+   - 用法：适用于在客户端与服务端同时运行的代码中调用，客户端负责给触发玩家播放，而服务端负责通知其它玩家。
+3. `playLocalSound(double x, double y, double z, SoundEvent, SoundSource, volume, pitch, distanceDelay)`
+   - 客户端行为：仅在客户端世界播放，可选基于距离延迟（`distanceDelay`）。
+   - 服务端行为：不执行任何操作。
+   - 用法：仅在客户端使用，适合通过自定义数据包触发或其它客户端特效（如雷声）。
 
-1. <a name="level-playsound-pbecvp"></a> `playSound(Player, BlockPos, SoundEvent, SoundSource, volume, pitch)`
-    - Simply forwards to [overload (2)](#level-playsound-pxyzecvp), adding 0.5 to each coordinate of the `BlockPos` given.
+`ClientLevel` 方法：
 
-2. <a name="level-playsound-pxyzecvp"></a> `playSound(Player, double x, double y, double z, SoundEvent, SoundSource, volume, pitch)`
-    - **Client Behavior**: If the passed in player is *the* client player, plays the sound event to the client player.
-    - **Server Behavior**: Plays the sound event to everyone nearby **except** the passed in player. Player can be `null`.
-    - **Usage**: The correspondence between the behaviors implies that these two methods are to be called from some player-initiated code that will be run on both logical sides at the same time: the logical client handles playing it to the user, and the logical server handles everyone else hearing it without re-playing it to the original user. They can also be used to play any sound in general at any position server-side by calling it on the logical server and passing in a `null` player, thus letting everyone hear it.
+1. `playLocalSound(BlockPos, SoundEvent, SoundSource, volume, pitch, distanceDelay)`
+   - 转发到 `Level` 的 `playLocalSound` 重载并在每个坐标上加 0.5。
 
-3. <a name="level-playsound-xyzecvpd"></a> `playLocalSound(double x, double y, double z, SoundEvent, SoundSource, volume, pitch, distanceDelay)`
-    - **Client Behavior**: Just plays the sound event in the client level. If `distanceDelay` is `true`, then delays the sound based on how far it is from the player.
-    - **Server Behavior**: Does nothing.
-    - **Usage**: This method only works client-side, and thus is useful for sounds sent in custom packets, or other client-only effect-type sounds. Used for thunder.
+`Entity` 方法：
 
-### `ClientLevel`
+1. `playSound(SoundEvent, volume, pitch)`
+   - 转发到 `Level` 的相应重载，传入 `null` 玩家。
+   - 客户端行为：无效果。
+   - 服务端行为：在该实体所在位置向所有玩家播放声音。
 
-1. <a name="clientlevel-playsound-becvpd"></a> `playLocalSound(BlockPos, SoundEvent, SoundSource, volume, pitch, distanceDelay)`
-    - Simply forwards to `Level`'s [overload (3)](#level-playsound-xyzecvpd), adding 0.5 to each coordinate of the `BlockPos` given.
+`Player` 方法：
 
-### `Entity`
+1. `playSound(SoundEvent, volume, pitch)`（覆盖自 `Entity`）
+   - 转发到 `Level` 的相应重载，传入 `this` 作为玩家。
+   - 客户端行为：无效果（见 `LocalPlayer` 的覆盖）。
+   - 服务端行为：向附近所有玩家播放声音但不包含该玩家。
 
-1. <a name="entity-playsound-evp"></a> `playSound(SoundEvent, volume, pitch)`
-    - Forwards to `Level`'s [overload (2)](#level-playsound-pxyzecvp), passing in `null` as the player.
-    - **Client Behavior**: Does nothing.
-    - **Server Behavior**: Plays the sound event to everyone at this entity's position.
-    - **Usage**: Emitting any sound from any non-player entity server-side.
+`LocalPlayer` 方法：
 
-### `Player`
-
-1. <a name="player-playsound-evp"></a> `playSound(SoundEvent, volume, pitch)` (overriding the one in [`Entity`](#entity-playsound-evp))
-    - Forwards to `Level`'s [overload (2)](#level-playsound-pxyzecvp), passing in `this` as the player.
-    - **Client Behavior**: Does nothing, see override in [`LocalPlayer`](#localplayer-playsound-evp).
-    - **Server Behavior**: Plays the sound to everyone nearby *except* this player.
-    - **Usage**: See [`LocalPlayer`](#localplayer-playsound-evp).
-
-### `LocalPlayer`
-
-1. <a name="localplayer-playsound-evp"></a> `playSound(SoundEvent, volume, pitch)` (overriding the one in [`Player`](#player-playsound-evp))
-    - Forwards to `Level`'s [overload (2)](#level-playsound-pxyzecvp), passing in `this` as the player.
-    - **Client Behavior**: Just plays the Sound Event.
-    - **Server Behavior**: Method is client-only.
-    - **Usage**: Just like the ones in `Level`, these two overrides in the player classes seem to be for code that runs together on both sides. The client handles playing the sound to the user, while the server handles everyone else hearing it without re-playing to the original user.
+1. `playSound(SoundEvent, volume, pitch)`（覆盖自 `Player`）
+   - 转发到 `Level` 的相应重载，传入 `this` 作为玩家。
+   - 客户端行为：在客户端播放声音。
+   - 服务端行为：该方法仅在客户端存在。
 
 [loc]: ../concepts/resources.md#resourcelocation
 [wiki]: https://minecraft.wiki/w/Sounds.json

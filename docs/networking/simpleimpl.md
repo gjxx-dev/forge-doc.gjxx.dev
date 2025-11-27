@@ -1,12 +1,11 @@
-SimpleImpl
-==========
+# SimpleImpl
 
-SimpleImpl is the name given to the packet system that revolves around the `SimpleChannel` class. Using this system is by far the easiest way to send custom data between clients and the server.
+`SimpleImpl` 是围绕 `SimpleChannel` 类构建的数据包系统名称，使用此系统是客户端与服务端之间发送自定义数据的最简单方式。
 
-Getting Started
----------------
+快速开始
+---------
 
-First you need to create your `SimpleChannel` object. We recommend that you do this in a separate class, possibly something like `ModidPacketHandler`. Create your `SimpleChannel` as a static field in this class, like so:
+首先需要创建 `SimpleChannel` 对象。建议在独立类（如 `ModidPacketHandler`）中以静态字段方式创建：
 
 ```java
 private static final String PROTOCOL_VERSION = "1";
@@ -18,101 +17,86 @@ public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
 );
 ```
 
-The first argument is a name for the channel. The second argument is a `Supplier<String>` returning the current network protocol version. The third and fourth arguments respectively are `Predicate<String>` checking whether an incoming connection protocol version is network-compatible with the client or server, respectively.
-Here, we simply compare with the `PROTOCOL_VERSION` field directly, meaning that the client and server `PROTOCOL_VERSION`s must always match or FML will deny login.
+第一个参数为通道名称；第二个参数为返回当前网络协议版本的 `Supplier<String>`；第三和第四个参数为 `Predicate<String>`，分别用于检查传入连接协议版本与客户端或服务端是否兼容。上例直接比较 `PROTOCOL_VERSION`，意味着客户端与服务端的协议版本必须相同，否则 FML 将拒绝登录。
 
-The Version Checker
--------------------
+版本检查（Version Checker）
+---------------------------
 
-If your mod does not require the other side to have a specific network channel, or to be a Forge instance at all, you should take care that you properly define your version compatibility checkers (the `Predicate<String>` parameters) to handle additional "meta-versions" (defined in `NetworkRegistry`) that can be received by the version checker. These are:
+若你的模组不要求对端必须具备特定通道或运行 Forge，请正确处理版本兼容检查器（`Predicate<String>`），以支持 `NetworkRegistry` 定义的额外 “meta-versions”：
 
-* `ABSENT` - if this channel is missing on the other endpoint. Note that in this case, the endpoint is still a Forge endpoint, and may have other mods.
-* `ACCEPTVANILLA` - if the endpoint is a vanilla (or non-Forge) endpoint.
+* `ABSENT`：对端缺少该通道（但仍可能是 Forge 端并加载其它模组）。
+* `ACCEPTVANILLA`：对端为原版（或非 Forge）客户端。
 
-Returning `false` for both means that this channel must be present on the other endpoint. If you just copy the code above, this is what it does. Note that these values are also used during the list ping compatibility check, which is responsible for showing the green check / red cross in the multiplayer server select screen.
+若对两个检查均返回 `false`，表示此通道必须出现在另一端；上述值也用于服务器列表 ping 的兼容性检查，以决定多人界面中的绿色勾/红叉显示。
 
-Registering Packets
--------------------
+注册数据包
+---------
 
-Next, we must declare the types of messages that we would like to send and receive. This is done using `INSTANCE#registerMessage`, which takes 5 parameters:
+接下来声明需要发送与接收的消息类型，使用 `INSTANCE#registerMessage`，该方法接受五个参数：
 
-- The first parameter is the discriminator for the packet. This is a per-channel unique ID for the packet. We recommend you use a local variable to hold the ID, and then call registerMessage using `id++`. This will guarantee 100% unique IDs.
-- The second parameter is the actual packet class `MSG`.
-- The third parameter is a `BiConsumer<MSG, FriendlyByteBuf>` responsible for encoding the message into the provided `FriendlyByteBuf`.
-- The fourth parameter is a `Function<FriendlyByteBuf, MSG>` responsible for decoding the message from the provided `FriendlyByteBuf`.
-- The final parameter is a `BiConsumer<MSG, Supplier<NetworkEvent.Context>>` responsible for handling the message itself.
+- 第一个参数为分辨符（discriminator），是通道内唯一的包 ID；建议用局部变量并在每次注册后执行 `id++` 以保证唯一性。
+- 第二个参数为消息类 `MSG`。
+- 第三个参数为 `BiConsumer<MSG, FriendlyByteBuf>`，用于将消息编码进 `FriendlyByteBuf`。
+- 第四个参数为 `Function<FriendlyByteBuf, MSG>`，用于从 `FriendlyByteBuf` 解码消息。
+- 第五个参数为 `BiConsumer<MSG, Supplier<NetworkEvent.Context>>`，用于处理消息。
 
-The last three parameters can be method references to either static or instance methods in Java. Remember that an instance method `MSG#encode(FriendlyByteBuf)` still satisfies `BiConsumer<MSG, FriendlyByteBuf>`; the `MSG` simply becomes the implicit first argument.
+后三个参数可以使用静态或实例方法的引用；例如实例方法 `MSG#encode(FriendlyByteBuf)` 也满足 `BiConsumer<MSG, FriendlyByteBuf>` 的要求。
 
-Handling Packets
-----------------
+处理数据包
+---------
 
-There are a couple things to highlight in a packet handler. A packet handler has both the message object and the network context available to it. The context allows access to the player that sent the packet (if on the server), and a way to enqueue thread-safe work.
+包处理器可访问消息对象与网络上下文（context），上下文允许访问发送该包的玩家（在服务端）并提供线程安全的任务排队方式：
 
 ```java
 public static void handle(MyMessage msg, Supplier<NetworkEvent.Context> ctx) {
   ctx.get().enqueueWork(() -> {
-    // Work that needs to be thread-safe (most work)
-    ServerPlayer sender = ctx.get().getSender(); // the client that sent this packet
-    // Do stuff
+    // 需要线程安全执行的操作
+    ServerPlayer sender = ctx.get().getSender();
+    // 执行处理逻辑
   });
   ctx.get().setPacketHandled(true);
 }
 ```
 
-Packets sent from the server to the client should be handled in another class and wrapped via `DistExecutor#unsafeRunWhenOn`.
+服务端向客户端发送的包应在另一个类中处理，并通过 `DistExecutor#unsafeRunWhenOn` 包装以确保仅在物理客户端执行。
 
 ```java
-// In Packet class
 public static void handle(MyClientMessage msg, Supplier<NetworkEvent.Context> ctx) {
   ctx.get().enqueueWork(() ->
-    // Make sure it's only executed on the physical client
     DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientPacketHandlerClass.handlePacket(msg, ctx))
   );
   ctx.get().setPacketHandled(true);
 }
-
-// In ClientPacketHandlerClass
-public static void handlePacket(MyClientMessage msg, Supplier<NetworkEvent.Context> ctx) {
-  // Do stuff
-}
 ```
 
-Note the presence of `#setPacketHandled`, which is used to tell the network system that the packet has successfully completed handling.
+注意必须调用 `#setPacketHandled` 告知网络系统该包已被成功处理。
 
 !!! warning
-    As of Minecraft 1.8 packets are by default handled on the network thread.
-
-    That means that your handler can _not_ interact with most game objects directly. Forge provides a convenient way to make your code execute on the main thread instead through the supplied `NetworkEvent$Context`. Simply call `NetworkEvent$Context#enqueueWork(Runnable)`, which will call the given `Runnable` on the main thread at the next opportunity.
+    自 Minecraft 1.8 起，包默认在网络线程处理，因此处理器不能直接交互大部分游戏对象。应使用 `NetworkEvent$Context#enqueueWork(Runnable)` 将工作排到主线程执行。
 
 !!! warning
-    Be defensive when handling packets on the server. A client could attempt to exploit the packet handling by sending unexpected data.
+    在服务端处理包时应采取防御性编程，客户端可能发送畸形或恶意数据。常见问题为“任意区块生成”漏洞：若信任客户端发送的区块坐标并访问未加载区域，服务端可能被迫生成大量区块并写盘，造成严重性能与存储问题。通用规则是仅在 `Level#hasChunkAt` 为真时访问区块或方块实体。
 
-    A common problem is vulnerability to **arbitrary chunk generation**. This typically happens when the server is trusting a block position sent by a client to access blocks and block entities. When accessing blocks and block entities in unloaded areas of the level, the server will either generate or load this area from disk, then promptly write it to disk. This can be exploited to cause **catastrophic damage** to a server's performance and storage space without leaving a trace.
+发送数据包
+---------
 
-    To avoid this problem, a general rule of thumb is to only access blocks and block entities if `Level#hasChunkAt` is true.
-
-
-Sending Packets
----------------
-
-### Sending to the Server
-
-There is but one way to send a packet to the server. This is because there is only ever *one* server the client can be connected to at once. To do so, we must again use that `SimpleChannel` that was defined earlier. Simply call `INSTANCE.sendToServer(new MyMessage())`. The message will be sent to the handler for its type, if one exists.
-
-### Sending to Clients
-
-Packets can be sent directly to a client using the `SimpleChannel`: `HANDLER.sendTo(new MyClientMessage(), serverPlayer.connection.getConnection(), NetworkDirection.PLAY_TO_CLIENT)`. However, this can be quite inconvenient. Forge has some convenience functions that can be used:
+发送到服务端：
 
 ```java
-// Send to one player
+INSTANCE.sendToServer(new MyMessage());
+```
+
+发送到客户端（示例）：
+
+```java
+// 发送给单个玩家
 INSTANCE.send(PacketDistributor.PLAYER.with(serverPlayer), new MyMessage());
 
-// Send to all players tracking this level chunk
+// 发送给观察某区块的所有玩家
 INSTANCE.send(PacketDistributor.TRACKING_CHUNK.with(levelChunk), new MyMessage());
 
-// Send to all connected players
+// 发送给所有连接的玩家
 INSTANCE.send(PacketDistributor.ALL.noArg(), new MyMessage());
 ```
 
-There are additional `PacketDistributor` types available; check the documentation on the `PacketDistributor` class for more details.
+更多 `PacketDistributor` 选项请参考其类文档。

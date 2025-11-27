@@ -1,14 +1,13 @@
-Render Types
-============
+# 渲染类型
 
-Adding the `render_type` entry at the top level of the JSON suggests to the loader what render type the model should use. If not specified, the loader gets to pick the render type(s) used, often falling back to the render types returned by `ItemBlockRenderTypes#getRenderLayers()`.
+在模型 JSON 的顶层添加 `render_type` 条目可以向加载器建议该模型应使用的渲染类型。如果未指定，加载器可自行选择渲染类型，通常回退到 `ItemBlockRenderTypes#getRenderLayers()` 返回的类型。
 
-Custom model loaders may ignore this field entirely.
+自定义模型加载器可以完全忽略此字段。
 
 !!! note
-    Since 1.19 this is preferred over the deprecated method of setting the applicable render type(s) via `ItemBlockRenderTypes#setRenderLayer()` for blocks.
+    自 1.19 起，优先使用此方法而不是通过 `ItemBlockRenderTypes#setRenderLayer()`（已弃用）设置适用渲染类型。
 
-Example of a model for a cutout block with the glass texture
+下面是一个使用玻璃纹理的切割（cutout）方块模型示例：
 
 ```js
 {
@@ -20,52 +19,52 @@ Example of a model for a cutout block with the glass texture
 }
 ```
 
-Vanilla Values
+原版可选值
 --------------
 
-The following options with the respective chunk and entity render type are supplied by Forge (`NamedRenderTypeManager#preRegisterVanillaRenderTypes()`):
+Forge 在 `NamedRenderTypeManager#preRegisterVanillaRenderTypes()` 中提供了下列命名选项（含对应的区块与实体渲染类型）：
 
 * `minecraft:solid`
-    * Chunk render type: `RenderType#solid()`
-    * Entity render type: `ForgeRenderTypes#ITEM_LAYERED_SOLID`
-    * Used for fully solid blocks (i.e. Stone)
+    * 区块渲染类型：`RenderType#solid()`
+    * 实体渲染类型：`ForgeRenderTypes#ITEM_LAYERED_SOLID`
+    * 用于完全不透明的方块（例如石头）
 * `minecraft:cutout`
-    * Chunk render type: `RenderType#cutout()`
-    * Entity render type: `ForgeRenderTypes#ITEM_LAYERED_CUTOUT`
-    * Used for blocks where any given pixel is either fully transparent or fully opaque (i.e. Glass Block)
+    * 区块渲染类型：`RenderType#cutout()`
+    * 实体渲染类型：`ForgeRenderTypes#ITEM_LAYERED_CUTOUT`
+    * 用于像素要么完全透明要么完全不透明的方块（例如玻璃）
 * `minecraft:cutout_mipped`
-    * Chunk render type: `RenderType#cutoutMipped()`
-    * Entity render type: `ForgeRenderTypes#ITEM_LAYERED_CUTOUT`
-    * Chunk and entity render type differ due to mipmapping on the entity render type making items look weird
-    * Used for blocks where any given pixel is either fully transparent or fully opaque and the texture should be scaled down at larger distances ([mipmapping]) to avoid visual artifacts (i.e. Leaves)
+    * 区块渲染类型：`RenderType#cutoutMipped()`
+    * 实体渲染类型：`ForgeRenderTypes#ITEM_LAYERED_CUTOUT`
+    * 由于实体渲染的 mipmapping 行为不同，区块与实体类型不同
+    * 用于像素要么完全透明要么完全不透明且在远处应启用 mipmapping 的情形（例如树叶）
 * `minecraft:cutout_mipped_all`
-    * Chunk render type: `RenderType#cutoutMipped()`
-    * Entity render type: `ForgeRenderTypes#ITEM_LAYERED_CUTOUT_MIPPED`
-    * Used in similar cases as `minecraft:cutout_mipped` when the item representation should also have mipmapping applied
+    * 区块渲染类型：`RenderType#cutoutMipped()`
+    * 实体渲染类型：`ForgeRenderTypes#ITEM_LAYERED_CUTOUT_MIPPED`
+    * 与 `cutout_mipped` 类似，但项呈现也应使用 mipmapping
 * `minecraft:translucent`
-    * Chunk render type: `RenderType#translucent()`
-    * Entity render type: `ForgeRenderTypes#ITEM_LAYERED_TRANSLUCENT`
-    * Used for blocks where any given pixel may be partially transparent (i.e. Stained Glass)
+    * 区块渲染类型：`RenderType#translucent()`
+    * 实体渲染类型：`ForgeRenderTypes#ITEM_LAYERED_TRANSLUCENT`
+    * 用于像素可能部分透明的方块（例如染色玻璃）
 * `minecraft:tripwire`
-    * Chunk render type: `RenderType#tripwire()`
-    * Entity render type: `ForgeRenderTypes#ITEM_LAYERED_TRANSLUCENT`
-    * Chunk and entity render type differ due to the tripwire render type not being feasible as an entity render type
-    * Used for blocks with the special requirement of being rendered to the weather render target (i.e. Tripwire)
+    * 区块渲染类型：`RenderType#tripwire()`
+    * 实体渲染类型：`ForgeRenderTypes#ITEM_LAYERED_TRANSLUCENT`
+    * 由于 tripwire 渲染类型无法作为实体渲染类型使用，区块与实体类型不同
+    * 用于需要渲染到天气渲染目标的方块（例如 tripwire）
 
-Custom Values
+自定义值
 -------------
 
-Custom named render types to be specified in a model can be registered in the `RegisterNamedRenderTypesEvent`. This event is fired on the mod event bus.
+可以在 `RegisterNamedRenderTypesEvent` 中注册可在模型中使用的自定义命名渲染类型。该事件在 mod 事件总线上触发。
 
-A custom named render type consists of two or three components:
+一个自定义命名渲染类型由两到三个组件组成：
 
-* A chunk render type - any of the types in the list returned by `RenderType.chunkBufferLayers()` can be used
-* A render type with the `DefaultVertexFormat.NEW_ENTITY` vertex format ("entity render type")
-* A render type with the `DefaultVertexFormat.NEW_ENTITY` vertex format for use when the *Fabulous!* graphics mode is selected (optional)
+* 区块渲染类型 — 可以使用 `RenderType.chunkBufferLayers()` 返回列表中的任意类型
+* 一个使用 `DefaultVertexFormat.NEW_ENTITY` 顶点格式的渲染类型（“实体渲染类型”）
+* 一个在 *Fabulous!* 图形模式下使用的实体渲染类型（可选）
 
-The chunk render type is used when a block using this named render type is rendered as part of the chunk geometry.  
-The required entity render type is used when an item using this named render type is rendered in the Fast and Fancy graphics modes (inventory, ground, item frame, etc.).  
-The optional entity render type is used the same way as the required entity render type when the *Fabulous!* graphics mode is selected. This render type is needed in cases where the required entity render type does not work in the *Fabulous!* graphics mode (typically only applies to translucent render types).
+区块渲染类型在区块作为区块几何体的一部分渲染时使用。  
+必需的实体渲染类型在快速或华丽（Fast and Fancy）图形模式下用于物品的实体渲染（物品栏、地面、物品框等）。  
+可选的实体渲染类型在 *Fabulous!* 模式下替代必需实体渲染类型使用（解决某些需要在 Fabulous! 下不同渲染类型的问题，通常用于半透明类型）。
 
 ```java
 public static void onRegisterNamedRenderTypes(RegisterNamedRenderTypesEvent event)
@@ -75,6 +74,6 @@ public static void onRegisterNamedRenderTypes(RegisterNamedRenderTypesEvent even
 }
 ```
 
-These can then be addressed in JSON as `<your_mod_id>:special_cutout` and `<your_mod_id>:special_translucent`.
+注册后可在 JSON 中以 `<your_mod_id>:special_cutout` 或 `<your_mod_id>:special_translucent` 使用。
 
 [mipmapping]: https://en.wikipedia.org/wiki/Mipmap

@@ -1,68 +1,61 @@
-Global Loot Modifiers
-===========
+# 全局战利品修饰器（Global Loot Modifiers）
 
-Global Loot Modifiers are a data-driven method of handling modification of harvested drops without the need to overwrite dozens to hundreds of vanilla loot tables or to handle effects that would require interactions with another mod's loot tables without knowing what mods may be loaded. Global Loot Modifiers are also stacking, rather than last-load-wins, similar to tags.
+全局战利品修饰器（GLM）是一种数据驱动的方法，用于在不需要覆盖大量原版战利品表的情况下修改掉落，或在需要与其他模组的战利品表交互但无法确定哪些模组已加载时处理相关效果。全局战利品修饰器是可堆叠的（stacking），而非后加载覆盖（last-load-wins），这点类似于标签。
 
-Registering a Global Loot Modifier
+注册全局战利品修饰器
 -------------------------------
 
-You will need 4 things:
+你需要准备四样东西：
 
-1. Create a `global_loot_modifiers.json`.
-    * This will tell Forge about your modifiers and works similar to [tags].
-2. A serialized json representing your modifier.
-    * This will contain all of the data about your modification and allows data packs to tweak your effect.
-3. A class that extends `IGlobalLootModifier`.
-    * The operational code that makes your modifier work. Most modders can extend `LootModifier` as it supplies base functionality.
-4. Finally, a codec to encode and decode your operational class.
-    * This is [registered] as any other `IForgeRegistryEntry`.
+1. 创建 `global_loot_modifiers.json`。
+    * 该文件告知 Forge 你的修饰器，类似于 [tags]。
+2. 一个序列化的 JSON，表示你的修饰器。
+    * 该文件包含修饰器的数据，使数据包可以调整该效果。
+3. 一个继承 `IGlobalLootModifier` 的类。
+    * 实际执行修饰功能的代码。大多数开发者可以继承 `LootModifier` 以获得基础功能。
+4. 一个用于对你的运行时类进行编码/解码的 codec。
+    * 该 codec 与其他 `IForgeRegistryEntry` 一样进行[注册]。
 
-The `global_loot_modifiers.json`
+`global_loot_modifiers.json`
 -------------------------------
 
-The `global_loot_modifiers.json` represents all loot modifiers to be loaded into the game. This file **MUST** be placed within `data/forge/loot_modifiers/global_loot_modifiers.json`.
+`global_loot_modifiers.json` 表示将被加载到游戏中的所有修饰器。该文件**必须**放在 `data/forge/loot_modifiers/global_loot_modifiers.json`。
 
 !!! important
-    `global_loot_modifiers.json` will only be read in the `forge` namespace. The file will be neglected if it is under the mod's namespace.
+    `global_loot_modifiers.json` 仅在 `forge` 命名空间下被读取，若放在模组自身命名空间将被忽略。
 
-`entries` is an *ordered list* of the modifiers that will be loaded. The [ResourceLocation][resloc]s specified points to their associated entry within `data/<namespace>/loot_modifiers/<path>.json`. This is primarily relevant to data pack makers for resolving conflicts between modifiers from separate mods.
+`entries` 是一个*有序列表*，指明将被加载的修饰器。指定的 [ResourceLocation][resloc] 指向 `data/<namespace>/loot_modifiers/<path>.json` 中的对应条目。这对于数据包作者解决来自不同模组的修饰器冲突尤为重要。
 
-`replace`, when `true`, changes the behavior from appending loot modifiers to the global list to replacing the global list entries entirely. Modders will want to use `false` for compatibility with other mod implementations. Datapack makers may want to specify their overrides with `true`.
+当 `replace` 为 true 时，行为从将修饰器追加到全局列表改为完全替换全局列表。为了与其它模组实现兼容，模组通常应使用 `false`。
 
 ```js
 {
-  "replace": false, // Must be present
+  "replace": false,
   "entries": [
-    // Represents a loot modifier in 'data/examplemod/loot_modifiers/example_glm.json'
     "examplemod:example_glm",
     "examplemod:example_glm2"
-    // ...
   ]
 }
 ```
 
-The Serialized JSON
+序列化的 JSON
 -------------------------------
 
-This file contains all of the potential variables related to your modifier, including the conditions that must be met prior to modifying any loot. Avoid hard-coded values wherever possible so that data pack makers can adjust balance if they wish to.
+该文件包含与你的修饰器相关的所有变量，包括使修饰器生效所需的条件。应尽量避免硬编码值，以便数据包作者可以根据需要调整平衡。
 
-`type` represents the registry name of the [codec] used to read the associated JSON file. This must always be present.
+`type` 表示用于读取该 JSON 文件的 [codec] 的注册名，必须始终存在。
 
-`conditions` should represent the loot table conditions for this modifier to activate. Conditions should avoid being hardcoded to allow datapack creators as much flexibility to adjust the criteria. This must also be always present.
+`conditions` 表示修饰器生效的战利品表条件。为了允许数据包作者灵活调整条件，应避免硬编码。这一项也必须存在。
 
 !!! important
-    Although `conditions` should represent what is needed for the modifier to activate, this is only the case if using the bundled Forge classes. If using `LootModifier` as a subclass, all conditions will be **ANDed** together and checked to see if the modifier should be applied.
+    虽然 `conditions` 应表明修饰器生效的条件，但当使用 Forge 提供的 `LootModifier` 子类时，所有条件将被 **AND** 连接并检查以决定是否应用修饰器。
 
-Any additional properties read by the serializer and defined by the modifier can also be specified.
+可以在 JSON 中指定序列化器与修饰器定义的其它属性。
 
 ```js
-// Within data/examplemod/loot_modifiers/example_glm.json
 {
   "type": "examplemod:example_loot_modifier",
-  "conditions": [
-    // Normal loot table conditions
-    // ...
-  ],
+  "conditions": [ /*...*/ ],
   "prop1": "val1",
   "prop2": 10,
   "prop3": "minecraft:dirt"
@@ -72,55 +65,52 @@ Any additional properties read by the serializer and defined by the modifier can
 `IGlobalLootModifier`
 ---------------------
 
-To supply the functionality a global loot modifier specifies, a `IGlobalLootModifier` implementation must be specified. These are instances generated each time a serializer decodes the information from JSON and supplies it into this object.
+要提供全局战利品修饰器的功能，必须实现 `IGlobalLootModifier`。每当序列化器从 JSON 解码信息时，会生成该实现的一个实例。
 
-There are two methods that needs to be defined in order to create a new modifier: `#apply` and `#codec`. `#apply` takes in the current loot that will be generated along with the context information such as the currently level or additional defined parameters. It returns the list of drops to generate.
+需要定义两个方法：`#apply` 与 `#codec`。`#apply` 接受当前将被生成的战利品列表及上下文（例如所在关卡等），并返回最终要生成的掉落列表。
 
 !!! note
-    The returned list of drops from any one modifier is fed into other modifiers in the order they are registered. As such, modified loot can be modified by another loot modifier.
+    单个修饰器返回的掉落列表会按注册顺序依次传递给其它修饰器，因此已被修改的掉落仍可能被后续修饰器再次修改。
 
-`#codec` returns the registered [codec] used to encode and decode the modifier to/from JSON.
+`#codec` 返回用于将修饰器与 JSON 编码/解码的注册 codec。
 
-### The `LootModifier` Subclass
+### `LootModifier` 子类
 
-`LootModifier` is an abstract implementation of `IGlobalLootModifier` to provide the base functionality which most modders can easily extend and implement. This expands upon the existing interface by defining the `#apply` method to check the conditions to determine whether or not to modify the generated loot.
+`LootModifier` 是 `IGlobalLootModifier` 的抽象实现，提供了大多数开发者可以继承的基础功能。其实现中需注意构造函数（接受 `LootItemCondition[]`）以及 `#doApply` 方法。
 
-There are two things of note within the subclass implementation: the constructor which must take in an array of `LootItemCondition`s and the `#doApply` method.
+构造函数所传入的 `LootItemCondition[]` 数组表示在应用修饰器前必须满足的条件；这些条件会被 **AND** 组合。
 
-The array of `LootItemCondition`s define the list of conditions that must be true before the loot can be modified. The supplied conditions are **ANDed** together, meaning that all conditions must be true.
-
-The `#doApply` method works the same as the `#apply` method except that it only executes once all conditions return true.
+`#doApply` 的行为类似于 `#apply`，但仅在所有条件为真时执行。
 
 ```java
 public class ExampleModifier extends LootModifier {
 
   public ExampleModifier(LootItemCondition[] conditionsIn, String prop1, int prop2, Item prop3) {
     super(conditionsIn);
-    // Store the rest of the parameters
+    // 存储其它参数
   }
 
   @NotNull
   @Override
   protected ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
-    // Modify the loot and return the new drops
+    // 修改并返回新的掉落
   }
 
   @Override
   public Codec<? extends IGlobalLootModifier> codec() {
-    // Return the codec used to encode and decode this modifier
+    // 返回用于编码/解码的 codec
   }
 }
 ```
 
-The Loot Modifier Codec
+Loot 修饰器的 Codec
 -----------------------
 
-The connector between the JSON and the `IGlobalLootModifier` instance is a [`Codec<T>`][codecdef], where `T` represents the type of the `IGlobalLootModifier` to use.
+连接 JSON 与 `IGlobalLootModifier` 实例的是 [`Codec<T>`][codecdef]，其中 `T` 表示 `IGlobalLootModifier` 的类型。
 
-For ease of convenience, a loot conditions codec has been provided for an easy addition to a record-like codec via `LootModifier#codecStart`. This is utilized for [data generation][datagen] of the associated loot modifier.
+为方便使用，提供了一个战利品条件 codec，可通过 `LootModifier#codecStart` 将其加入记录式 codec（record-like codec），该方式对关联修饰器的数据生成（data generation）十分有用。
 
 ```java
-// For some DeferredRegister<Codec<? extends IGlobalLootModifier>> REGISTRAR
 public static final RegistryObject<Codec<ExampleModifier>> = REGISTRAR.register("example_codec", () ->
   RecordCodecBuilder.create(
     inst -> LootModifier.codecStart(inst).and(
@@ -134,7 +124,7 @@ public static final RegistryObject<Codec<ExampleModifier>> = REGISTRAR.register(
 );
 ```
 
-[Examples][examples] can be found on the Forge Git repository, including silk touch and smelting effects.
+[Examples][examples] 可在 Forge Git 仓库中找到，包括丝绸之触（silk touch）与熔炼（smelting）效果的示例。
 
 [tags]: ./tags.md
 [resloc]: ../../concepts/resources.md#ResourceLocation
@@ -143,3 +133,4 @@ public static final RegistryObject<Codec<ExampleModifier>> = REGISTRAR.register(
 [codecdef]: ../../datastorage/codecs.md
 [datagen]: ../../datagen/server/glm.md
 [examples]: https://github.com/MinecraftForge/MinecraftForge/blob/1.20.x/src/test/java/net/minecraftforge/debug/gameplay/loot/GlobalLootModifiersTest.java
+

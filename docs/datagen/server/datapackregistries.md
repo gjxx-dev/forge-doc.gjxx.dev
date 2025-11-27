@@ -1,24 +1,23 @@
-Datapack Registry Object Generation
-==================================
+# 数据包（Datapack）注册表对象生成
 
-Datapack registry objects can be generated for a mod by constructing a new `DatapackBuiltinEntriesProvider` and providing a `RegistrySetBuilder` with the new objects to register. The provider must be [added][datagen] to the `DataGenerator`.
+可以通过构造一个 `DatapackBuiltinEntriesProvider` 并传入包含要注册对象的 `RegistrySetBuilder` 来为模组生成 datapack 注册表对象。该提供者需通过 `DataGenerator#addProvider` 添加到生成器中。
 
 !!! note
-    `DatapackBuiltinEntriesProvider` is a Forge extension on top of `RegistriesDatapackGenerator` which properly handles referencing existing datapack registry objects without exploding the entry. So, this documentation will use `DatapackBuiltinEntriesProvider`.
+    `DatapackBuiltinEntriesProvider` 是对 `RegistriesDatapackGenerator` 的 Forge 扩展，能在引用已有 datapack 注册表对象时正确处理而不出错。因此本节使用 `DatapackBuiltinEntriesProvider`。
 
 ```java
-// On the MOD event bus
+// 在 MOD 事件总线上
 @SubscribeEvent
 public void gatherData(GatherDataEvent event) {
     event.getGenerator().addProvider(
-        // Tell generator to run only when server data are generating
+        // 仅在生成服务器数据时运行
         event.includeServer(),
         output -> new DatapackBuiltinEntriesProvider(
           output,
           event.getLookupProvider(),
-          // The builder containing the datapack registry objects to generate
+          // 包含要生成的 datapack 注册表对象的构建器
           new RegistrySetBuilder().add(/* ... */),
-          // Set of mod ids to generate the datapack registry objects of
+          // 需要为其生成对象的模组 id 集合
           Set.of(MOD_ID)
         )
     );
@@ -28,29 +27,24 @@ public void gatherData(GatherDataEvent event) {
 `RegistrySetBuilder`
 --------------------
 
-A `RegistrySetBuilder` is responsible for building all datapack registry objects to be used within the game. The builder can add a new entry for a registry, which can then register objects to that registry.
-
-First, a new instance of a `RegistrySetBuilder` can be initialized by calling the constructor. Then, the `#add` method (which takes in the `ResourceKey` of the registry, a `RegistryBootstrap` consumer containing the `BootstapContext` to register the objects, and an optional `Lifecycle` argument to indicate the registry's current lifecycle status) can be called to handle a specific registry for registration.
+`RegistrySetBuilder` 用于构建要包含在 datapack 中的注册表对象。可以通过 `#add` 为指定的注册表注册一组对象，`#add` 接受注册表的 `ResourceKey`、一个 `RegistryBootstrap`（包含用于注册对象的 `BootstrapContext` 的 consumer），以及可选的 `Lifecycle` 来指示该注册表对象的生命周期状态。
 
 ```java
 new RegistrySetBuilder()
-  // Create configured features
+  // 创建配置要素（configured features）
   .add(Registries.CONFIGURED_FEATURE, bootstrap -> {
-    // Register configured features here
+    // 在此注册配置要素
   })
-  // Create placed features
+  // 创建已放置要素（placed features）
   .add(Registries.PLACED_FEATURE, bootstrap -> {
-    // Register placed features here
+    // 在此注册已放置要素
   });
 ```
 
-!!! note
-    Datapack registries created through Forge can also generate their objects using this builder by also passing in the associated `ResourceKey`.
+注册时使用 `BootstrapContext#register`
+-------------------------------------
 
-Registering with `BootstapContext`
-----------------------------------
-
-The `#register` method in the `BootstapContext` provided by the builder can be used to register objects. It takes in the `ResourceKey` representing the registry name of the object, the object to register, and an optional `Lifecycle` argument to indicate the registry object's current lifecycle status. 
+在 `BootstrapContext` 中使用 `#register` 可登记对象，`#register` 接受该对象的 `ResourceKey`、要注册的对象，以及可选的 `Lifecycle`。
 
 ```java
 public static final ResourceKey<ConfiguredFeature<?, ?>> EXAMPLE_CONFIGURED_FEATURE = ResourceKey.create(
@@ -58,71 +52,36 @@ public static final ResourceKey<ConfiguredFeature<?, ?>> EXAMPLE_CONFIGURED_FEAT
   ResourceLocation.fromNamespaceAndPath(MOD_ID, "example_configured_feature")
 );
 
-// In some constant location or argument
 new RegistrySetBuilder()
-  // Create configured features
   .add(Registries.CONFIGURED_FEATURE, bootstrap -> {
-    // Register configured features here
     bootstrap.register(
-      // The resource key for the configured feature
       EXAMPLE_CONFIGURED_FEATURE,
       new ConfiguredFeature<>(
-        Feature.ORE, // Create an ore feature
-        new OreConfiguration(
-          List.of(), // Does nothing
-          8 // in veins of at most 8
-        )
+        Feature.ORE,
+        new OreConfiguration(List.of(), 8)
       )
     );
   })
-  // Create placed features
   .add(Registries.PLACED_FEATURE, bootstrap -> {
-    // Register placed features here
+    // 注册 placed feature
   });
 ```
 
-### Datapack Registry Object Lookup
+### Datapack 注册表对象查找
 
-Sometimes datapack registry objects may want to use other datapack registry objects or tags containing datapack registry objects. In those cases, you can look up another datapack registry using `BootstapContext#lookup` to get a `HolderGetter`. From there, you can get a `Holder$Reference` to the datapack registry object or a `HolderSet$Named` for the tag via `#getOrThrow` by passing in the associated key.
+在某些情况下，datapack 注册表对象需要引用其他 datapack 注册表对象或包含注册表对象的标签（tag）。这时可通过 `BootstrapContext#lookup` 获取另一个注册表的 `HolderGetter`，然后通过 `getOrThrow` 按键获取 `Holder$Reference` 或 `HolderSet$Named`（用于标签）。
 
 ```java
-public static final ResourceKey<ConfiguredFeature<?, ?>> EXAMPLE_CONFIGURED_FEATURE = ResourceKey.create(
-  Registries.CONFIGURED_FEATURE,
-  ResourceLocation.fromNamespaceAndPath(MOD_ID, "example_configured_feature")
+// 在构造 placed feature 时查找已注册的 configured feature
+HolderGetter<ConfiguredFeature<?, ?>> configured = bootstrap.lookup(Registries.CONFIGURED_FEATURE);
+
+bootstrap.register(
+  EXAMPLE_PLACED_FEATURE,
+  new PlacedFeature(
+    configured.getOrThrow(EXAMPLE_CONFIGURED_FEATURE),
+    List.of()
+  )
 );
-
-public static final ResourceKey<PlacedFeature> EXAMPLE_PLACED_FEATURE = ResourceKey.create(
-  Registries.PLACED_FEATURE,
-  ResourceLocation.fromNamespaceAndPath(MOD_ID, "example_placed_feature")
-);
-
-// In some constant location or argument
-new RegistrySetBuilder()
-  // Create configured features
-  .add(Registries.CONFIGURED_FEATURE, bootstrap -> {
-    // Register configured features here
-    bootstrap.register(
-      // The resource key for the configured feature
-      EXAMPLE_CONFIGURED_FEATURE,
-      new ConfiguredFeature(/* ... */)
-    );
-  })
-  // Create placed features
-  .add(Registries.PLACED_FEATURE, bootstrap -> {
-    // Register placed features here
-
-    // Get configured feature registry
-    HolderGetter<ConfiguredFeature<?, ?>> configured = bootstrap.lookup(Registries.CONFIGURED_FEATURE);
-
-    bootstrap.register(
-      // The resource key for the placed feature
-      EXAMPLE_PLACED_FEATURE,
-      new PlacedFeature(
-        configured.getOrThrow(EXAMPLE_CONFIGURED_FEATURE), // Get the configured feature
-        List.of() // and do nothing to the placement location
-      )
-    )
-  });
 ```
 
 [datagen]: ../index.md#data-providers

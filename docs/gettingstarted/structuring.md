@@ -1,81 +1,47 @@
-Structuring Your Mod
-====================
+# 项目结构
 
-Structured mods are beneficial for maintenance, making contributions, and providing a clearer understanding of the underlying codebase. Some of the recommendations from Java, Minecraft, and Forge are listed below.
+本节说明如何组织你的模组代码和资源以便与 Forge 的构建与运行实践保持一致。
 
-!!! note
-    You do not have to follow the advice below; you can structure your mod any way you see fit. However, it is still highly recommended to do so.
-
-Packaging
+源码布局
 ---------
 
-When structuring your mod, pick a unique, top-level package structure. Many programmers will use the same name for different classes, interfaces, etc. Java allows classes to have the same name as long as they are in different packages. As such, if two classes have the same package with the same name, only one would be loaded, most likely causing the game to crash.
+建议采用标准的 Gradle 源集布局：
+
+- Java/Kotlin 源代码：`src/main/java` 或 `src/main/kotlin`
+- 资源（包括 `mods.toml`、资源文件、数据包等）：`src/main/resources`
+
+在 `resources` 下组织你的 Minecraft 资源命名空间，例如：
 
 ```
-a.jar
-  - com.example.ExampleClass
-b.jar
-  - com.example.ExampleClass // This class will not normally be loaded
+src/main/resources/
+  assets/examplemod/
+    models/
+    textures/
+  data/examplemod/
+    loot_tables/
+    recipes/
+  META-INF/mods.toml
 ```
 
-This is even more relevant when it comes to loading modules. If there are class files in two packages under the same name in separate modules, this will cause the mod loader **to crash on startup** since mod modules are exported to the game and other mods.
+包命名建议
+---------
 
-```
-module A
-  - package X
-    - class I
-    - class J
-module B
-  - package X // This package will cause the mod loader to crash, as there already is a module with package X being exported
-    - class R
-    - class S
-    - class T
-```
+Java 包名应当以你的域名倒置开头（例如 `com.example.examplemod`），然后追加模块或功能分组。避免使用 `net.minecraftforge` 或其它库的顶级包名。
 
-As such, your top level package should be something that you own: a domain, email address, a subdomain of where your website, etc. It can even be your name or username as long as you can guarantee that it will be uniquely identifiable within the expected target.
+资源命名空间
+---------
 
-Type      | Value             | Top-Level Package
-:---:     | :---:             | :---
-Domain    | example.com       | `com.example`
-Subdomain | example.github.io | `io.github.example`
-Email     | example@gmail.com | `com.gmail.example`
+每个模组应使用单一的资源命名空间（namespace），通常与 `modId` 相同，例如 `examplemod`。数据与资产应存放在 `data/<namespace>/...` 与 `assets/<namespace>/...` 下。
 
-The next level package should then be your mod's id (e.g. `com.example.examplemod` where `examplemod` is the mod id). This will guarantee that, unless you have two mods with the same id (which should never be the case), your packages should not have any issues loading.
+构建工具与依赖
+---------
 
-You can find some additional naming conventions on [Oracle's tutorial page][naming].
+使用 Forge 推荐的 Gradle 插件（见 `build.gradle` 或 `build.gradle.kts`）来处理构建、打包和依赖管理。不要将其他模组的代码直接包含在你的源码树中；应当通过 `compileOnly` 或 `runtimeOnly` 依赖来引用它们。
 
-### Sub-package Organization
+命名约定
+---------
 
-In addition to the top-level package, it is highly recommend to break your mod's classes between subpackages. There are two major methods on how to do so:
+- `modId` 应为小写字母、数字或下划线。
+- 资源路径必须以你模组的命名空间为前缀，例如 `assets/examplemod/textures/block/example.png`。
 
-* **Group By Function**: Make subpackages for classes with a common purpose. For example, blocks can be under `block` or `blocks`, entities under `entity` or `entities`, etc. Mojang uses this structure with the singular version of the word.
-* **Group By Logic**: Make subpackages for classes with a common logic. For example, if you were creating a new type of crafting table, you would put its block, menu, item, and more under `feature.crafting_table`.
-
-#### Client, Server, and Data Packages
-
-In general, code only for a given side or runtime should be isolated from the other classes in a separate subpackage. For example, code related to [data generation][datagen] should go in a `data` package while code only on the dedicated server should go in a `server` package.
-
-However, it is highly recommended that [client-only code][sides] should be isolated in a `client` subpackage. This is because dedicated servers have no access to any of the client-only packages in Minecraft. As such, having a dedicated package would provide a decent sanity check to verify you are not reaching across sides within your mod.
-
-Class Naming Schemes
---------------------
-
-A common class naming scheme makes it easier to decipher the purpose of the class or to easily locate specific classes.
-
-Classes are commonly suffixed with its type, for example:
-
-* An `Item` called `PowerRing` -> `PowerRingItem`.
-* A `Block` called `NotDirt` -> `NotDirtBlock`.
-* A menu for an `Oven` -> `OvenMenu`.
-
-!!! note
-    Mojang typically follows a similar structure for all classes except entities. Those are represented by just their names (e.g. `Pig`, `Zombie`, etc.).
-
-Choose One Method from Many
----------------------------
-
-There are many methods for performing a certain task: registering an object, listening for events, etc. It's generally recommended to be consistent by using a single method to accomplish a given task. While this does improve code formatting, it also avoid any weird interactions or redundancies that may occur (e.g. your event listener executing twice).
-
-[naming]: https://docs.oracle.com/javase/tutorial/java/package/namingpkgs.html
-[datagen]: ../datagen/index.md
-[sides]: ../concepts/sides.md
+更多细节见 `gettingstarted/modfiles.md` 与 `concepts/registries.md`。

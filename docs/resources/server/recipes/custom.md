@@ -1,70 +1,60 @@
-Custom Recipes
-==============
+# 自定义配方
 
-Every recipe definition is made up of three components: the `Recipe` implementation which holds the data and handles the execution logic with the provided inputs, the `RecipeType` which represents the category or context the recipe will be used in, and the `RecipeSerializer` which handles decoding and network communication of the recipe data. How one chooses to use the recipe is up to the implementor.
+每个配方定义由三部分组成：保存数据并处理执行逻辑的 `Recipe` 实现、表示配方类别或上下文的 `RecipeType`、以及负责解码与网络通信的 `RecipeSerializer`。具体如何使用由实现者决定。
 
-Recipe
+Recipe（配方）
 ------
 
-The `Recipe` interface describes the recipe data and the execution logic. This includes matching the inputs and providing the associated result. As the recipe subsystem performs item transformations by default, the inputs are supplied through a `Container` subtype.
+`Recipe` 接口描述配方数据与执行逻辑，包括匹配输入与生成结果。配方子系统默认通过 `Container` 子类提供输入。
 
 !!! important
-    The `Container`s passed into the recipe should be treated as if its contents were immutable. Any mutable operations should be performed on a copy of the input through `ItemStack#copy`.
+    传入 `Recipe` 的 `Container` 应被视为不可变；若需进行可变操作，请先对输入调用 `ItemStack#copy` 并在副本上操作。
 
-To be able to obtain a recipe instance from the manager, `#matches` must return true. This method checks against the provided container to see whether the associated inputs are valid. `Ingredient`s can be used for validation by calling `Ingredient#test`.
+要能从管理器中获取配方实例，`#matches` 必须返回 true（用于检测输入是否匹配）。可以使用 `Ingredient#test` 进行校验。
 
-If the recipe has been chosen, it is then built using `#assemble` which may use data from the inputs to create the result.
+若配方被选中，则通过 `#assemble` 构建结果，`#assemble` 可使用输入数据来生成输出。
 
 !!! tip
-    `#assemble` should always produce a unique `ItemStack`. If unsure whether `#assemble` does so, call `ItemStack#copy` on the result before returning.
+    `#assemble` 应始终返回唯一的 `ItemStack` 实例；若不确定，请在返回前调用 `ItemStack#copy`。
 
-Most of the other methods are purely for integration with the recipe book.
+示例：
 
 ```java
 public record ExampleRecipe(Ingredient input, int data, ItemStack output) implements Recipe<Container> {
-  // Implement methods here
+  // 在此实现方法
 }
 ```
 
-!!! note
-    While a record is used in the above example, it is not required to do so in your own implementation.
-
-RecipeType
+RecipeType（配方类型）
 ----------
 
-`RecipeType` is responsible for defining the category or context the recipe will be used within. For example, if a recipe was going to be smelted in a furnace, it would have a type of `RecipeType#SMELTING`. Being blasted in a blast furnace would have a type of `RecipeType#BLASTING`.
+`RecipeType` 定义配方将在哪种上下文中使用（例如熔炉、鼓风炉等）。若现有类型均不符合需求，需要注册新的 `RecipeType`。
 
-If none of the existing types match what context the recipe will be used within, then a new `RecipeType` must be [registered][forge].
-
-The `RecipeType` instance must then be returned by `Recipe#getType` in the new recipe subtype.
+新配方子类的 `Recipe#getType` 应返回相应的 `RecipeType` 实例。
 
 ```java
-// For some RegistryObject<RecipeType> EXAMPLE_TYPE
-// In ExampleRecipe
 @Override
 public RecipeType<?> getType() {
   return EXAMPLE_TYPE.get();
 }
 ```
 
-RecipeSerializer
+RecipeSerializer（配方序列化器）
 ----------------
 
-A `RecipeSerializer` is responsible for decoding JSONs and communicating across the network for an associated `Recipe` subtype. Each recipe decoded by the serializer is saved as a unique instance within the `RecipeManager`. A `RecipeSerializer` must be [registered][forge].
+`RecipeSerializer` 负责解码 JSON 并在网络间通信配方数据。由序列化器解码后的配方实例会被 `RecipeManager` 唯一保存。`RecipeSerializer` 必须注册。
 
-Only three methods need to be implemented for a `RecipeSerializer`:
+需要实现的方法：
 
- Method     | Description
- :---:      | :---
-fromJson    | Decodes a JSON into the `Recipe` subtype.
-toNetwork   | Encodes a `Recipe` to the buffer to send to the client. The recipe identifier does not need to be encoded.
-fromNetwork | Decodes a `Recipe` from the buffer sent from the server. The recipe identifier does not need to be decoded.
+ |    方法     | 描述                                                    |
+ | :---------: | :------------------------------------------------------ |
+ |  fromJson   | 将 JSON 解码为配方子类型。                              |
+ |  toNetwork  | 将配方编码写入缓冲区以发送到客户端（无需写入配方 id）。 |
+ | fromNetwork | 从服务端发送的缓冲区中解码配方（无需解码配方 id）。     |
 
-The `RecipeSerializer` instance must then be returned by `Recipe#getSerializer` in the new recipe subtype.
+配方子类的 `Recipe#getSerializer` 应返回对应的 `RecipeSerializer` 实例。
 
 ```java
-// For some RegistryObject<RecipeSerializer> EXAMPLE_SERIALIZER
-// In ExampleRecipe
 @Override
 public RecipeSerializer<?> getSerializer() {
   return EXAMPLE_SERIALIZER.get();
@@ -72,55 +62,46 @@ public RecipeSerializer<?> getSerializer() {
 ```
 
 !!! tip
-    There are some useful methods to make reading and writing data for recipes easier. `Ingredient`s can use `#fromJson`, `#toNetwork`, and `#fromNetwork` while `ItemStack`s can use `CraftingHelper#getItemStack`, `FriendlyByteBuf#writeItem`, and `FriendlyByteBuf#readItem`.
+    有若干便捷方法用于简化配方的数据读写：`Ingredient` 支持 `#fromJson`、`#toNetwork`、`#fromNetwork`，`ItemStack` 可通过 `CraftingHelper#getItemStack`、`FriendlyByteBuf#writeItem` 与 `FriendlyByteBuf#readItem` 读写。
 
-Building the JSON
------------------
+构建 JSON
+----------------
 
-Custom Recipe JSONs are stored in the same place as other [recipes][json]. The specified `type` should represent the registry name of the **recipe serializer**. Any additional data is specified by the serializer during decoding.
+自定义配方的 JSON 存放位置与其它配方相同。`type` 字段应指定**配方序列化器**的注册名，其余字段由序列化器在解码时处理。
 
 ```js
 {
-  // The custom serializer registry name
   "type": "examplemod:example_serializer",
-  "input": {
-    // Some ingredient input
-  },
-  "data": 0, // Some data wanted for the recipe
-  "output": {
-    // Some stack output
-  }
+  "input": { /* 某种 ingredient */ },
+  "data": 0,
+  "output": { /* 某个堆栈输出 */ }
 }
 ```
 
-Non-Item Logic
---------------
+非物品逻辑
+----------------
 
-If items are not used as part of the input or result of a recipe, then the normal methods provided in [`RecipeManager`][manager] will not be useful. Instead, an additional method for testing a recipe's validity and/or supplying the result should be added to the custom `Recipe` instance. From there, all the recipes for that specific `RecipeType` can be obtained via `RecipeManager#getAllRecipesFor` and then checked and/or supplied the result using the newly implemented methods.
+如果配方不使用物品作为输入或输出，则 `RecipeManager` 提供的常规方法可能不适用。可在自定义 `Recipe` 中添加用于验证有效性或返回结果的额外方法，然后通过 `RecipeManager#getAllRecipesFor` 获取该类型的所有配方并按需筛选。
 
 ```java
-// In some Recipe subimplementation ExampleRecipe
-
-// Checks the block at the position to see if it matches the stored data
+// 在某个自定义 Recipe 实现中
 boolean matches(Level level, BlockPos pos);
-
-// Creates the block state to set the block at the specified position to
 BlockState assemble(RegistryAccess access);
 
-// In some manager class
+// 在某个管理器类中查找配方
 public Optional<ExampleRecipe> getRecipeFor(Level level, BlockPos pos) {
   return level.getRecipeManager()
-    .getAllRecipesFor(exampleRecipeType) // Gets all recipes
-    .stream() // Looks through all recipes for types
-    .filter(recipe -> recipe.matches(level, pos)) // Checks if the recipe inputs are valid
-    .findFirst(); // Finds the first recipe whose inputs match
+    .getAllRecipesFor(exampleRecipeType)
+    .stream()
+    .filter(recipe -> recipe.matches(level, pos))
+    .findFirst();
 }
 ```
 
-Data Generation
+数据生成
 ---------------
 
-All custom recipes, regardless of input or output data, can be created into a `FinishedRecipe` for [data generation][datagen] using the `RecipeProvider`.
+任意自定义配方（无论输入/输出为何）均可转换为 `FinishedRecipe` 以用于 [数据生成][datagen]，通过 `RecipeProvider` 完成。
 
 [forge]: ../../../concepts/registries.md#methods-for-registering
 [json]: https://minecraft.wiki/w/Recipe#JSON_format
